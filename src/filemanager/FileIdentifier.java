@@ -1,4 +1,4 @@
-package main;
+package filemanager;
 
 import java.io.FileInputStream;
 import java.security.MessageDigest;

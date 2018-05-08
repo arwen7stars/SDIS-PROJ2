@@ -1,18 +1,21 @@
 package main;
 import java.io.IOException;
 import java.net.DatagramPacket;
-import java.net.InetAddress;
-import java.net.MulticastSocket;
+import java.net.DatagramSocket;
+import java.net.SocketException;
 
-public class MulticastListenner implements Runnable {
+public class ChannelListener implements Runnable {
 	private Peer peer;
-	private MulticastSocket socket;
+	private DatagramSocket socket;
 	
-	public MulticastListenner(InetAddress address, int port, Peer peer) throws IOException {
+	public ChannelListener(Peer peer) throws IOException {
 		this.peer = peer;
 		
-		this.socket = new MulticastSocket(port);
-		this.socket.joinGroup(address);
+		try {
+			socket = new DatagramSocket();
+		} catch (SocketException e1) {
+			e1.printStackTrace();
+		}
 	}
 
 	@Override
@@ -29,6 +32,11 @@ public class MulticastListenner implements Runnable {
 
 			new Thread(new EventHandler(packet, this.peer)).start();
 		}
+	}
+	
+	public int getPort()
+	{
+		return socket.getLocalPort();		// host is localhost
 	}
 
 }

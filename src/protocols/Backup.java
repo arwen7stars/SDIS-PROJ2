@@ -12,6 +12,10 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
+
+import filemanager.FileChunk;
+import filemanager.FileIdentifier;
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import main.*;
@@ -118,14 +122,13 @@ public class Backup implements Runnable {
 			System.out.println("Backup was not completed. " + dateFormat.format(date2));
 		}
 		
-		this.peer.saveChunksInfoFile();
-		this.peer.saveFilesInfoFile();
+		this.peer.getChunkInfo().saveChunksInfoFile();
+		this.peer.getFileInfo().saveFilesInfoFile();
 	}
 
 	//Method that waits for chunk threads to finish
 	private boolean waitBackupResult(ScheduledExecutorService scheduledPool, List<Future<Boolean>> threadResults) {
 		boolean backupDone = false;
-		int i = 0;
 		for (Future<Boolean> result : threadResults) {
 			try {
 				if(!result.get()) {
@@ -138,8 +141,6 @@ public class Backup implements Runnable {
 			} catch (InterruptedException | ExecutionException e) {
 				System.out.println("Chunk thread timed out.");
 			}	
-			
-			i++;
 		}
 		
 		return backupDone;

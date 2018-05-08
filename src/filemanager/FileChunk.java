@@ -1,5 +1,7 @@
-package main;
+package filemanager;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -7,6 +9,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+
+import main.EventHandler;
+import main.Peer;
 
 public class FileChunk implements Callable<Boolean> {
 	
@@ -28,7 +33,7 @@ public class FileChunk implements Callable<Boolean> {
 	public Boolean call() {
 		byte [] packet = makePutChunkRequest();
 		try {
-			this.peer.sendReplyToMulticast(Peer.multicastChannel.MDB, packet);
+			this.peer.sendReplyToPeer(Peer.channelType.MDB, packet);
 		} catch (IOException e1) {
 			System.out.println("Error sending putchunk message");
 		}
@@ -43,6 +48,25 @@ public class FileChunk implements Callable<Boolean> {
 		
 		return result;
 	}
+	
+	public static byte[] getChunk(int serverID, String fileID, String chunkNr) {
+		File file = new File(Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + serverID + "/" + Peer.CHUNKS_FOLDER + "/"
+				+ chunkNr + "_" + fileID);
+
+		byte[] chunkBytes = new byte[(int) file.length()];
+
+		FileInputStream fis;
+		try {
+			fis = new FileInputStream(file);
+			fis.read(chunkBytes);
+			fis.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		return chunkBytes;
+	}
+
 
 	private boolean checkStoredMessages() throws InterruptedException, ExecutionException {		
 		ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
@@ -83,7 +107,7 @@ public class FileChunk implements Callable<Boolean> {
 		//If the desired replication degree has not been fulfilled it sends again the putchunk request
 		if(!backupDone) {
 			byte [] packet = makePutChunkRequest();
-			this.peer.sendReplyToMulticast(Peer.multicastChannel.MDB, packet);
+			this.peer.sendReplyToPeer(Peer.channelType.MDB, packet);
 		}
 		
 		return backupDone;

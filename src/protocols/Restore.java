@@ -10,8 +10,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import filemanager.FileIdentifier;
 import main.EventHandler;
-import main.FileIdentifier;
 import main.Peer;
 
 public class Restore implements Runnable {
@@ -54,7 +54,7 @@ public class Restore implements Runnable {
 				byte[] packet = makeGetChunkMessage(this.fileID, this.actualChunk);
 
 				try {
-					this.peer.sendReplyToMulticast(Peer.multicastChannel.MC, packet);
+					this.peer.sendReplyToPeer(Peer.channelType.MC, packet);
 					this.peer.getWaitRestoredChunks().add(this.actualChunk + "_" + this.fileID);
 				} catch (IOException e) {
 					System.out.println("Error sending getchunk message");

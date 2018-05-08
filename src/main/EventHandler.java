@@ -14,6 +14,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import filemanager.FileChunk;
 import protocols.Delete;
 
 public class EventHandler implements Runnable {
@@ -129,9 +130,9 @@ public class EventHandler implements Runnable {
 			}
 
 			// Save chunks information
-			this.peer.storeChunkInfo(Integer.parseInt(this.header[2]), this.header[3],
+			this.peer.getChunkInfo().storeChunkInfo(Integer.parseInt(this.header[2]), this.header[3],
 					Integer.parseInt(this.header[4]));
-			this.peer.saveChunksInfoFile();
+			this.peer.getChunkInfo().saveChunksInfoFile();
 
 			break;
 
@@ -164,7 +165,7 @@ public class EventHandler implements Runnable {
 			if (!chunkAlreadySent) {
 				byte[] packet = makeChunkMessage(header[3], header[4]);
 				try {
-					this.peer.sendReplyToMulticast(Peer.multicastChannel.MDR, packet);
+					this.peer.sendReplyToPeer(Peer.channelType.MDR, packet);
 				} catch (IOException e) {
 					System.out.println("Error sending chunk message");
 				}
@@ -217,8 +218,8 @@ public class EventHandler implements Runnable {
 			}
 			
 			//Update memory chunks info
-			this.peer.removeChunkInfo(hashmapKey, Integer.parseInt(header[2]));
-			this.peer.saveChunksInfoFile();
+			this.peer.getChunkInfo().removeChunkInfo(hashmapKey, Integer.parseInt(header[2]));
+			this.peer.getChunkInfo().saveChunksInfoFile();
 
 			// Check if I have stored this chunk, to see the perceived replication degree
 			if (this.peer.getChunksStoredSize().get(hashmapKey) != null) {
@@ -234,7 +235,7 @@ public class EventHandler implements Runnable {
 		}
 	}
 
-	private boolean fulfilledRep(String key) {
+	/*private boolean fulfilledRep(String key) {
 		if(this.peer.getActualReplicationDegrees().get(key) != null) {
 			int desiredRepDegree = this.peer.getDesiredReplicationDegrees().get(key);
 			int perceivedRepDegree = this.peer.getActualReplicationDegrees().get(key);
@@ -245,7 +246,7 @@ public class EventHandler implements Runnable {
 		}
 		
 		return false;
-	}
+	}*/
 
 	private void reBackupFile(String hashmapKey, int replication) {
 		Random random = new Random();
@@ -263,7 +264,7 @@ public class EventHandler implements Runnable {
 		if (!chunkBackedUp) {
 			byte[] packet = makePutChunkRequest(header[3], header[4], replication);
 			try {
-				this.peer.sendReplyToMulticast(Peer.multicastChannel.MDR, packet);
+				this.peer.sendReplyToPeer(Peer.channelType.MDR, packet);
 			} catch (IOException e) {
 				System.out.println("Error sending chunk message");
 			}
@@ -275,7 +276,7 @@ public class EventHandler implements Runnable {
 				" " + replicationDegree + " ";
 		message = message + EventHandler.CRLF + EventHandler.CRLF;
 		
-		byte [] chunk = this.peer.getChunk(fileID, chunkNr);
+		byte [] chunk = FileChunk.getChunk(peer.getID(), fileID, chunkNr);
 		
 		byte [] header = message.getBytes();
 		byte[] packet = new byte[header.length + chunk.length];
@@ -294,7 +295,7 @@ public class EventHandler implements Runnable {
 	}
 
 	private byte[] makeChunkMessage(String fileID, String chunkNr) {
-		byte[] chunk = this.peer.getChunk(fileID, chunkNr);
+		byte[] chunk = FileChunk.getChunk(peer.getID(), fileID, chunkNr);
 
 		String message = "CHUNK " + this.peer.getProtocolVersion() + " " + this.peer.getID() + " " + fileID + " "
 				+ chunkNr + " ";
@@ -320,19 +321,19 @@ public class EventHandler implements Runnable {
 
 		// Save chunks information
 		this.peer.getChunksStoredSize().put(this.header[4] + "_" + this.header[3], this.body.length);
-		this.peer.storeChunkInfo(this.peer.getID(), this.header[3], Integer.parseInt(this.header[4]));
+		this.peer.getChunkInfo().storeChunkInfo(this.peer.getID(), this.header[3], Integer.parseInt(this.header[4]));
 		
 		// Update disk usage
 		this.peer.setDiskUsed(this.peer.getDiskUsed() + this.body.length);
 		
 		//Save non volatile memory
-		this.peer.saveChunksInfoFile();
-		this.peer.saveFilesInfoFile();
+		this.peer.getChunkInfo().saveChunksInfoFile();
+		this.peer.getFileInfo().saveFilesInfoFile();
 
 		// Send message STORED
 		byte[] packet = makeStoreChunkReply(this.header[3], this.header[4]);
 		try {
-			this.peer.sendReplyToMulticast(Peer.multicastChannel.MC, packet);
+			this.peer.sendReplyToPeer(Peer.channelType.MC, packet);
 		} catch (IOException e) {
 			System.out.println("Error sending message to multicast");
 		}

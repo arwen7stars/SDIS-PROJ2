@@ -48,7 +48,7 @@ public class Reclaim implements Runnable {
 			//Update run-time memory
 			String chunkName = chunkToDelete.getName();
 			chunksDeleted.add(chunkName);
-			this.peer.removeChunkInfo(chunkName, this.peer.getID());
+			this.peer.getChunkInfo().removeChunkInfo(chunkName, this.peer.getID());
 			this.peer.getChunksStoredSize().remove(chunkName);
 			this.diskUsed = this.diskUsed - chunkToDelete.length();	
 			
@@ -58,15 +58,15 @@ public class Reclaim implements Runnable {
 		
 		this.peer.setDiskUsed(this.diskUsed);
 		this.peer.setDiskMaxSpace(this.spaceReclaim);
-		this.peer.saveChunksInfoFile();
-		this.peer.saveFilesInfoFile();
+		this.peer.getChunkInfo().saveChunksInfoFile();
+		this.peer.getFileInfo().saveFilesInfoFile();
 	}
 	
 	private void sendRemoveMessages() {
 		for(String key : chunksDeleted) {
 			byte [] packet = makeRemoveMessage(key);
 			try {
-				this.peer.sendReplyToMulticast(Peer.multicastChannel.MC, packet);
+				this.peer.sendReplyToPeer(Peer.channelType.MC, packet);
 			} catch (IOException e) {
 				System.out.println("Error sending removed message.");
 			}

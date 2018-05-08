@@ -1,11 +1,13 @@
-package main;
+package protocols;
 
-public class PeerState {
+import main.Peer;
+
+public class State {
 	
 	private Peer peer;
 	private String state;
 	
-	public PeerState(Peer peer) {
+	public State(Peer peer) {
 		this.peer = peer;
 		this.state = "";
 		

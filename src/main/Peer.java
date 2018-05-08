@@ -1,51 +1,58 @@
 package main;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.net.DatagramPacket;
+import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.MulticastSocket;
+import java.net.Socket;
 import java.rmi.RemoteException;
-import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
+
+import filemanager.InfoChunk;
+import filemanager.InfoFile;
 import protocols.Backup;
 import protocols.Reclaim;
 import protocols.Restore;
+import protocols.State;
 
 public class Peer implements IRMI {
+	
+	// Global configurations
+	public static final String PEERS_FOLDER = "Peers";
+	public static final String DISK_FOLDER = "DiskPeer";
+	public static final String MASTER_FOLDER = "Master";
+	
+	public static final String SHARED_FOLDER = "Shared";
+	public static final String FILES_FOLDER = "Files";
+	public static final String CHUNKS_FOLDER = "Chunks";
+	public static final String CHUNKS_INFO = "chunks_info.txt";
+	public static final String FILES_INFO = "files_info.txt";
+	
+	// Network configurations
+	private Socket socket;
+	private DatagramSocket senderSocket;
 
 	// Peer configurations
 	private String protocolVersion;
 	private int serverID;
 
 	// Multicast configurations
-	private InetAddress addressMC;
-	private InetAddress addressMDB;
-	private InetAddress addressMDR;
-	private int portMC;
-	private int portMDB;
-	private int portMDR;
+	private ChannelListener mcChannel;
+	private ChannelListener mdbChannel;
+	private ChannelListener mdrChannel;
 
-	// Global configurations
-	public static final String PEERS_FOLDER = "Peers";
-	public static final String DISK_FOLDER = "DiskPeer";
-	public static final String SHARED_FOLDER = "Shared";
-	public static final String FILES_FOLDER = "Files";
-	public static final String CHUNKS_FOLDER = "Chunks";
-	public static final String CHUNKS_INFO = "chunks_info.txt";
-	public static final String FILES_INFO = "files_info.txt";
-
-	public static enum multicastChannel {
+	public static enum channelType {
 		MC, MDB, MDR
 	};
 
 	// Data structures
+	private InfoFile fileInfo;
+	private InfoChunk chunkInfo;
+	
 	/**
 	 * Maps all the fileIDs with the respective filename for each file whose backup
 	 * it has initiated - <FileName><FileID>
@@ -109,17 +116,10 @@ public class Peer implements IRMI {
 	 * Disk space used to store chunks
 	 */
 	private long diskUsed;
-
-	public Peer(String protocol, int id, InetAddress addressMC, int portMC, InetAddress addressMDB, int portMDB,
-			InetAddress addressMDR, int portMDR) throws IOException {
+	
+	public Peer(String protocol, int id) throws IOException {
 		this.protocolVersion = protocol;
 		this.serverID = id;
-		this.addressMC = addressMC;
-		this.addressMDB = addressMDB;
-		this.addressMDR = addressMDR;
-		this.portMC = portMC;
-		this.portMDB = portMDB;
-		this.portMDR = portMDR;
 
 		// Make peer disk
 		String peerDisk = PEERS_FOLDER + "/" + DISK_FOLDER + id;
@@ -131,11 +131,14 @@ public class Peer implements IRMI {
 		makeDirectory(backupFiles);
 		makeDirectory(chunksFiles);
 		makeDirectory(sharedFolder);
+		
+		this.fileInfo = new InfoFile(this);
+		this.chunkInfo = new InfoChunk(this);
 
-		if (!loadFilesInfo()) {
+		if (!fileInfo.loadFilesInfo()) {
 			initializeFilesAttributes();
 		}
-		if (!loadChunksInfo()) {
+		if (!chunkInfo.loadChunksInfo()) {
 			initializeChunksAttributes();
 		}
 
@@ -143,17 +146,33 @@ public class Peer implements IRMI {
 		this.receivedPutChunkMessages = new CopyOnWriteArrayList<String>();
 		this.restoredChunks = new ConcurrentHashMap<String, byte[]>();
 		this.waitRestoredChunks = new CopyOnWriteArrayList<String>();
+			
+		mcChannel = new ChannelListener(this);
+		mdbChannel = new ChannelListener(this);
+		mdrChannel = new ChannelListener(this);
+	
+		System.setProperty("javax.net.ssl.trustStore", "SSL/mykeystore");
+		System.setProperty("javax.net.ssl.trustStorePassword", "1234567890");
+		
+		// these channels will receive messages from other peers (other than master peer)
+		new Thread(mcChannel).start();
+		new Thread(mdbChannel).start();
+		new Thread(mdrChannel).start();
+		
+		// connects to master peer by its port
+		SSLSocketFactory sf = (SSLSocketFactory) SSLSocketFactory.getDefault();
+		socket = sf.createSocket("localhost", 5000);
+		
+		// allows to receive messages from master peer
+		new Thread(new PeerSocketChannel(this, socket)).start();
 
-		// Connect to multicast channels
-		new Thread(new MulticastListenner(addressMC, portMC, this)).start();
-		new Thread(new MulticastListenner(addressMDB, portMDB, this)).start();
-		new Thread(new MulticastListenner(addressMDR, portMDR, this)).start();
+		// allows to send messages to other peers (including to master peer)
+		setSenderSocket(new DatagramSocket());
 	}
 
-	public Peer() {
-	}
+	public Peer() {}
 
-	// Send delete message to MC multicast channel
+	// Send delete message to MC channel
 	public void sendDeleteRequest(String fileName) {
 		String fileID = this.filesIdentifiers.get(fileName);
 
@@ -162,18 +181,26 @@ public class Peer implements IRMI {
 			message = message + EventHandler.CRLF + EventHandler.CRLF;
 
 			try {
-				sendReplyToMulticast(Peer.multicastChannel.MC, message.getBytes());
+				sendReplyToPeer(Peer.channelType.MC, message.getBytes());
 			} catch (IOException e) {
 				System.out.println("Error sending delete message to multicast.");
 			}
 
 			this.backupState.replace(fileID, false);
-			removeFileInfo(fileID);
-			saveChunksInfoFile();
-			saveFilesInfoFile();
+			this.fileInfo.removeFileInfo(fileID);
+			this.chunkInfo.saveChunksInfoFile();
+			this.fileInfo.saveFilesInfoFile();
 			System.out.println("Delete finished.");
 		} else {
 			System.out.println("Error deleting the file, because it wasn't backed up by me.");
+		}
+	}
+	
+	public static void makeDirectory(String path) {
+		File file = new File(path);
+
+		if (file.mkdirs()) {
+			System.out.println("Folder " + path + " created.");
 		}
 	}
 
@@ -191,187 +218,76 @@ public class Peer implements IRMI {
 		this.chunksStoredSize = new ConcurrentHashMap<String, Integer>();
 	}
 
-	public void sendReplyToMulticast(multicastChannel type, byte[] packet) throws IOException {
+	public void sendReplyToPeer(channelType type, byte[] packet) throws IOException {
 		switch (type) {
 		case MC:
-			MulticastSocket socketMC = new MulticastSocket(portMC);
+			/*MulticastSocket socketMC = new MulticastSocket(portMC);
 
 			DatagramPacket sendPacketMC = new DatagramPacket(packet, packet.length, addressMC, portMC);
 			socketMC.send(sendPacketMC);
 
-			socketMC.close();
+			socketMC.close();*/
 			break;
 
 		case MDB:
-			MulticastSocket socketMDB = new MulticastSocket(portMDB);
+			/*MulticastSocket socketMDB = new MulticastSocket(portMDB);
 
 			DatagramPacket sendPacketMDB = new DatagramPacket(packet, packet.length, addressMDB, portMDB);
 			socketMDB.send(sendPacketMDB);
 
-			socketMDB.close();
+			socketMDB.close();*/
 			break;
 
 		case MDR:
-			MulticastSocket socketMDR = new MulticastSocket(portMDR);
+			/*MulticastSocket socketMDR = new MulticastSocket(portMDR);
 
 			DatagramPacket sendPacketMDR = new DatagramPacket(packet, packet.length, addressMDR, portMDR);
 			socketMDR.send(sendPacketMDR);
 
-			socketMDR.close();
+			socketMDR.close();*/
 
 			break;
 		}
 	}
-
-	// Method to load the non volatile memory about the backup files
-	@SuppressWarnings("unchecked")
-	public synchronized boolean loadFilesInfo() {
-		File file = new File(Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + this.serverID + "/" + Peer.FILES_INFO);
-		if (file.exists()) {
-			try {
-				ObjectInputStream serverStream = new ObjectInputStream(new FileInputStream(
-						Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + this.serverID + "/" + Peer.FILES_INFO));
-
-				this.filesIdentifiers = (ConcurrentHashMap<String, String>) serverStream.readObject();
-				this.backupState = (ConcurrentHashMap<String, Boolean>) serverStream.readObject();
-				this.diskMaxSpace = (long) serverStream.readObject();
-				this.diskUsed = (long) serverStream.readObject();
-
-				serverStream.close();
-			} catch (IOException | ClassNotFoundException e) {
-				System.err.println("Error loading the files info file.");
-				return false;
-			}
-
-			return true;
-		} else {
-			return false;
-		}
+	
+	public void setSenderSocket(DatagramSocket senderSocket) {
+		this.senderSocket = senderSocket;
 	}
 
-	// Method to load the non volatile memory about the chunk files
-	@SuppressWarnings("unchecked")
-	public synchronized boolean loadChunksInfo() {
-		File file = new File(Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + this.serverID + "/" + Peer.CHUNKS_INFO);
-		if (file.exists()) {
-			try {
-				ObjectInputStream serverStream = new ObjectInputStream(new FileInputStream(
-						Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + this.serverID + "/" + Peer.CHUNKS_INFO));
-
-				this.actualReplicationDegrees = (ConcurrentHashMap<String, Integer>) serverStream.readObject();
-				this.desiredReplicationDegrees = (ConcurrentHashMap<String, Integer>) serverStream.readObject();
-				this.chunksHosts = (ConcurrentHashMap<String, CopyOnWriteArrayList<Integer>>) serverStream.readObject();
-				this.chunksStoredSize = (ConcurrentHashMap<String, Integer>) serverStream.readObject();
-
-				serverStream.close();
-			} catch (IOException | ClassNotFoundException e) {
-				System.err.println("Error loading the chunks info file.");
-				return false;
-			}
-
-			return true;
-		} else {
-			return false;
-		}
-
+	public ConcurrentHashMap<String, CopyOnWriteArrayList<Integer>> getChunksHosts() {
+		return chunksHosts;
+	}
+	
+	public void setBackupState(ConcurrentHashMap<String, Boolean> backupState) {
+		this.backupState = backupState;
 	}
 
-	// Method to save all the runtime data of the server
-	public synchronized void saveChunksInfoFile() {
-		try {
-			ObjectOutputStream serverStream = new ObjectOutputStream(new FileOutputStream(
-					Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + this.serverID + "/" + Peer.CHUNKS_INFO));
-
-			serverStream.writeObject(this.actualReplicationDegrees);
-			serverStream.writeObject(this.desiredReplicationDegrees);
-			serverStream.writeObject(this.chunksHosts);
-			serverStream.writeObject(this.chunksStoredSize);
-
-			serverStream.close();
-		} catch (IOException e) {
-			System.err.println("Error writing the server info file.");
-		}
+	public void setFilesIdentifiers(ConcurrentHashMap<String, String> filesIdentifiers) {
+		this.filesIdentifiers = filesIdentifiers;
 	}
 
-	// Method to save all the runtime data of the server
-	public synchronized void saveFilesInfoFile() {
-		try {
-			ObjectOutputStream serverStream = new ObjectOutputStream(new FileOutputStream(
-					Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + this.serverID + "/" + Peer.FILES_INFO));
-
-			serverStream.writeObject(this.filesIdentifiers);
-			serverStream.writeObject(this.backupState);
-			serverStream.writeObject(this.diskMaxSpace);
-			serverStream.writeObject(this.diskUsed);
-
-			serverStream.close();
-		} catch (IOException e) {
-			System.err.println("Error writing the server info file.");
-		}
+	public void setChunksHosts(ConcurrentHashMap<String, CopyOnWriteArrayList<Integer>> chunksHosts) {
+		this.chunksHosts = chunksHosts;
 	}
 
-	public void storeChunkInfo(int senderID, String fileID, int chunkNr) {
-		String hashmapKey = chunkNr + "_" + fileID;
-
-		CopyOnWriteArrayList<Integer> chunkHosts = this.chunksHosts.get(hashmapKey);
-
-		// Check if is the first stored message of the chunk
-		if (chunkHosts == null) {
-			chunkHosts = new CopyOnWriteArrayList<Integer>();
-			chunkHosts.add(senderID);
-
-			this.chunksHosts.put(hashmapKey, chunkHosts);
-			this.actualReplicationDegrees.put(hashmapKey, chunkHosts.size());
-		} else {
-			// Check if senderID is already in the list
-			if (!chunkHosts.contains(senderID)) {
-				chunkHosts.add(senderID);
-				this.chunksHosts.replace(hashmapKey, chunkHosts);
-				this.actualReplicationDegrees.replace(hashmapKey, chunkHosts.size());
-			}
-		}
+	public void setChunksStoredSize(ConcurrentHashMap<String, Integer> chunksStoredSize) {
+		this.chunksStoredSize = chunksStoredSize;
 	}
 
-	private void removeFileInfo(String fileID) {
-		Iterator<String> it = this.chunksHosts.keySet().iterator();
-
-		while (it.hasNext()) {
-			String key = it.next();
-
-			if (key.endsWith(fileID)) {
-				it.remove();
-			}
-		}
-
-		Iterator<String> it2 = this.actualReplicationDegrees.keySet().iterator();
-
-		while (it2.hasNext()) {
-			String key = it2.next();
-
-			if (key.endsWith(fileID)) {
-				it2.remove();
-			}
-		}
+	public void setActualReplicationDegrees(ConcurrentHashMap<String, Integer> actualReplicationDegrees) {
+		this.actualReplicationDegrees = actualReplicationDegrees;
 	}
 
-	public void removeChunkInfo(String hashmapKey, int senderID) {
-		CopyOnWriteArrayList<Integer> chunkHosts = this.chunksHosts.get(hashmapKey);
-
-		// Check if is the first stored message of the chunk
-		if (chunkHosts != null && chunkHosts.contains(senderID)) {
-			int index = chunkHosts.indexOf(senderID);
-			chunkHosts.remove(index);
-			this.chunksHosts.replace(hashmapKey, chunkHosts);
-			this.actualReplicationDegrees.replace(hashmapKey, chunkHosts.size());
-		}
+	public void setDesiredReplicationDegrees(ConcurrentHashMap<String, Integer> desiredReplicationDegrees) {
+		this.desiredReplicationDegrees = desiredReplicationDegrees;
+	}
+	
+	public void setDiskUsed(long diskUsed) {
+		this.diskUsed = diskUsed;
 	}
 
-	private void makeDirectory(String path) {
-		File file = new File(path);
-
-		if (file.mkdirs()) {
-			System.out.println("Folder " + path + " created.");
-		}
+	public void setDiskMaxSpace(long diskSpace) {
+		this.diskMaxSpace = diskSpace;
 	}
 
 	public String getProtocolVersion() {
@@ -422,24 +338,6 @@ public class Peer implements IRMI {
 		return this.receivedPutChunkMessages;
 	}
 
-	public byte[] getChunk(String fileID, String chunkNr) {
-		File file = new File(Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + this.serverID + "/" + Peer.CHUNKS_FOLDER + "/"
-				+ chunkNr + "_" + fileID);
-
-		byte[] chunkBytes = new byte[(int) file.length()];
-
-		FileInputStream fis;
-		try {
-			fis = new FileInputStream(file);
-			fis.read(chunkBytes);
-			fis.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-
-		return chunkBytes;
-	}
-
 	public long getDiskSpace() {
 		return this.diskMaxSpace;
 	}
@@ -448,16 +346,20 @@ public class Peer implements IRMI {
 		return this.diskUsed;
 	}
 
-	public void setDiskUsed(long diskUsed) {
-		this.diskUsed = diskUsed;
+	public DatagramSocket getSenderSocket() {
+		return senderSocket;
 	}
 
-	public void setDiskMaxSpace(long diskSpace) {
-		this.diskMaxSpace = diskSpace;
+	public InfoFile getFileInfo() {
+		return fileInfo;
 	}
-
+	
+	public InfoChunk getChunkInfo() {
+		return chunkInfo;
+	}
+	
 	public String getPeerState() {
-		return new PeerState(this).getState();
+		return new State(this).getState();
 	}
 
 	@Override
