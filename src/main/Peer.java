@@ -150,24 +150,42 @@ public class Peer implements IRMI {
 		mcChannel = new ChannelListener(this);
 		mdbChannel = new ChannelListener(this);
 		mdrChannel = new ChannelListener(this);
+		
+		connectToMasterServer();
 	
-		System.setProperty("javax.net.ssl.trustStore", "SSL/mykeystore");
-		System.setProperty("javax.net.ssl.trustStorePassword", "1234567890");
+		//System.setProperty("javax.net.ssl.trustStore", "SSL/mykeystore");
+		//System.setProperty("javax.net.ssl.trustStorePassword", "1234567890");
 		
 		// these channels will receive messages from other peers (other than master peer)
 		new Thread(mcChannel).start();
 		new Thread(mdbChannel).start();
-		new Thread(mdrChannel).start();
-		
-		// connects to master peer by its port
-		SSLSocketFactory sf = (SSLSocketFactory) SSLSocketFactory.getDefault();
-		socket = sf.createSocket("localhost", 5000);
-		
-		// allows to receive messages from master peer
-		new Thread(new PeerSocketChannel(this, socket)).start();
+		new Thread(mdrChannel).start();		
 
 		// allows to send messages to other peers (including to master peer)
 		setSenderSocket(new DatagramSocket());
+	}
+
+	private void connectToMasterServer() {
+		// Set client key and truststore
+		/*System.setProperty("javax.net.ssl.trustStore", "SSL/truststore");
+		System.setProperty("javax.net.ssl.trustStorePassword", "123456");
+		System.setProperty("javax.net.ssl.keyStore", "SSL/client.keys");
+		System.setProperty("javax.net.ssl.keyStorePassword", "123456");*/
+		
+		System.setProperty("javax.net.ssl.trustStore", "SSL/mykeystore");
+		System.setProperty("javax.net.ssl.trustStorePassword", "1234567890");
+		
+		// connects to master peer by its port
+		SSLSocketFactory sf = (SSLSocketFactory) SSLSocketFactory.getDefault();
+		try {
+			socket = sf.createSocket("localhost", 5000);
+		} catch (IOException e) {
+			System.out.println("Can't connect to master server");
+			System.exit(-1);	// Shutdown the peer
+		}
+		
+		// allows to receive messages from master peer
+		new Thread(new PeerSocketChannel(this, (SSLSocket) socket)).start();
 	}
 
 	public Peer() {}

@@ -4,10 +4,12 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
+import javax.net.ssl.SSLServerSocket;
+
 public class ServerSocketChannel implements Runnable {
-	private ServerSocket socket;
+	private SSLServerSocket socket;
 	
-	public ServerSocketChannel(ServerSocket socket) {
+	public ServerSocketChannel(SSLServerSocket socket) {
 		this.socket = socket;
 	}
 

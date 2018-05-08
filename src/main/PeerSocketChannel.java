@@ -6,11 +6,13 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 
+import javax.net.ssl.SSLSocket;
+
 public class PeerSocketChannel implements Runnable {
 	private Peer peer;
-	private Socket socket;
+	private SSLSocket socket;
 	
-	public PeerSocketChannel(Peer peer, Socket socket) {
+	public PeerSocketChannel(Peer peer, SSLSocket socket) {
 		this.peer = peer;
 		this.socket = socket;
 	}
