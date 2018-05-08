@@ -15,10 +15,6 @@ public class Server {
 	private static ArrayList<Peer> peers;
 	
 	public static void main(String args[]) {
-		if(args.length != 1){
-			System.out.println("Wrong number of args.");
-			System.exit(1);
-		}
 		Server server = new Server(5000);
 	}
 	
