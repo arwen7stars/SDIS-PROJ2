@@ -167,13 +167,10 @@ public class Peer implements IRMI {
 
 	private void connectToMasterServer() {
 		// Set client key and truststore
-		/*System.setProperty("javax.net.ssl.trustStore", "SSL/truststore");
+		System.setProperty("javax.net.ssl.trustStore", "SSL/truststore");
 		System.setProperty("javax.net.ssl.trustStorePassword", "123456");
 		System.setProperty("javax.net.ssl.keyStore", "SSL/client.keys");
-		System.setProperty("javax.net.ssl.keyStorePassword", "123456");*/
-		
-		System.setProperty("javax.net.ssl.trustStore", "SSL/mykeystore");
-		System.setProperty("javax.net.ssl.trustStorePassword", "1234567890");
+		System.setProperty("javax.net.ssl.keyStorePassword", "123456");
 		
 		// connects to master peer by its port
 		SSLSocketFactory sf = (SSLSocketFactory) SSLSocketFactory.getDefault();

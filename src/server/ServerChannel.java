@@ -25,9 +25,7 @@ public class ServerChannel implements Runnable {
 			
 		        System.out.println("Server socket " + s.getLocalPort() + " accepted");
 		        Server.addPeerListener(s);
-		        
-		        // Add socket to peer channel array and create a new thread that will listen to messages
-		        
+		        		        
 		        PrintWriter out = new PrintWriter(s.getOutputStream(), true);
 		        BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()));
 		        String line = in.readLine();

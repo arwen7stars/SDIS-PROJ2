@@ -17,6 +17,7 @@ public class ServerPeerListener implements Runnable {
 
 	@Override
 	public void run() {
+		System.out.println("Server-side peer listener opened for peer using socket " + socket.getLocalPort());
 		PrintWriter out = null;
 		BufferedReader in = null;
 
