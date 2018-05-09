@@ -185,7 +185,7 @@ public class Peer implements IRMI {
 		}
 		
 		// allows to receive messages from master peer
-		new Thread(new PeerSocketChannel(this, (SSLSocket) socket)).start();
+		new Thread(new ClientChannel(this, (SSLSocket) socket)).start();
 	}
 
 	public Peer() {}

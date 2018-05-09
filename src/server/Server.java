@@ -2,19 +2,22 @@ package server;
 
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.ArrayList;
 
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLServerSocketFactory;
+import javax.net.ssl.SSLSocket;
 
 import main.Peer;
 
 public class Server {
 	private SSLServerSocket socket;
-	private static MasterSocketChannel masterPeer;
-	private static ArrayList<Peer> peers;
+	private static ArrayList<ServerPeerListener> peers;
 	
 	public static void main(String args[]) {
+		peers = new ArrayList<ServerPeerListener>();
+		
 		Server server = new Server(5000);
 	}
 	
@@ -42,8 +45,36 @@ public class Server {
 		// MasterServer require client authentication
 		socket.setNeedClientAuth(true);	
 
-		new Thread(new ServerSocketChannel(socket)).start();
+		new Thread(new ServerChannel(socket)).start();
 		
 		System.out.println("Server Socket running!");
+	}
+	
+	public static void addPeerListener(SSLSocket s) {
+		ServerPeerListener peer_channel = new ServerPeerListener(s);
+		new Thread(peer_channel).start();
+		
+		peers.add(peer_channel);
+	}
+	
+	public static String getPeers() {
+		String s = "";
+		
+		/*for(ServerPeerListener peerChannel : peers)
+		{
+			if(peer.getPeerID() != null)
+			{
+				Socket socket = peer.getSocket();
+		
+				s += socket.getInetAddress().getHostAddress() + ":" + socket.getPort() + " ";
+				s += peer.getPeerID() + " ";
+				s += peer.getMCPort() + " ";
+				s += peer.getMDBPort() + " ";
+				s += peer.getMDBPort() + " ";
+				s += peer.getSenderPort();
+				s += "\n";
+			}
+		}*/
+		return s;
 	}
 }

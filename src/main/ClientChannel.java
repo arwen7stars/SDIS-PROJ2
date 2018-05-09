@@ -1,25 +1,28 @@
 package main;
 
 import java.io.BufferedReader;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.Scanner;
 
 import javax.net.ssl.SSLSocket;
 
-public class PeerSocketChannel implements Runnable {
+public class ClientChannel implements Runnable {
 	private Peer peer;
 	private SSLSocket socket;
+	PrintWriter out;
 	
-	public PeerSocketChannel(Peer peer, SSLSocket socket) {
+	public ClientChannel(Peer peer, SSLSocket socket) {
 		this.peer = peer;
 		this.socket = socket;
 	}
 	
 	@Override
 	public void run() {
-		PrintWriter out = null;
+		out = null;
 		BufferedReader in = null;
 
 		try {
@@ -28,10 +31,10 @@ public class PeerSocketChannel implements Runnable {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		//Scanner scanner = new Scanner(System.in);
+		Scanner scanner = new Scanner(System.in);
 
 		while(true) {			
-			/*System.out.print("Enter something: ");
+			System.out.print("Enter something: ");
 			String input = scanner.nextLine();
             out.println(input);
             
@@ -40,9 +43,9 @@ public class PeerSocketChannel implements Runnable {
 				System.out.println("Response: " + in.readLine());
 			} catch (IOException e1) {
 				e1.printStackTrace();
-			}*/
+			}
 			
-			String msg = null;
+			/*String msg = null;
 			
 			try {
 				System.out.println("Peer socket " + peer.getID() + " listening to messages from other sockets!");
@@ -54,8 +57,25 @@ public class PeerSocketChannel implements Runnable {
 			
 			if(msg != null) {
 				System.out.println(msg);
-			}
+			}*/
 			
 		}            
+	}
+	
+	public void sendMessage(String message)
+	{
+		out.println(message);
+	}
+	
+	public void sendBytes(byte[] message)
+	{
+		DataOutputStream dOut = null;
+		try {
+			dOut = new DataOutputStream(socket.getOutputStream());
+			dOut.writeInt(message.length); 							// write length of the message
+			dOut.write(message);           							// write the message
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 }
