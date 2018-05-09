@@ -19,7 +19,7 @@ public class Reclaim implements Runnable {
 		this.spaceReclaim = kbytes * 1000;
 		this.peer = peer;
 		this.diskUsed = peer.getDiskUsed();
-		this.chunksPath = Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + this.peer.getID() + "/" + Peer.CHUNKS_FOLDER;
+		this.chunksPath = Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + this.peer.getServerID() + "/" + Peer.CHUNKS_FOLDER;
 		this.chunksDeleted = new ArrayList<String>();
 	}
 
@@ -48,7 +48,7 @@ public class Reclaim implements Runnable {
 			//Update run-time memory
 			String chunkName = chunkToDelete.getName();
 			chunksDeleted.add(chunkName);
-			this.peer.getChunkInfo().removeChunkInfo(chunkName, this.peer.getID());
+			this.peer.getChunkInfo().removeChunkInfo(chunkName, this.peer.getServerID());
 			this.peer.getChunksStoredSize().remove(chunkName);
 			this.diskUsed = this.diskUsed - chunkToDelete.length();	
 			
@@ -76,7 +76,7 @@ public class Reclaim implements Runnable {
 	private byte[] makeRemoveMessage(String key) {
 		String [] fileInfo = key.split("_");
 		
-		String message = "REMOVED" + " " + this.peer.getProtocolVersion() + " " + this.peer.getID() + " " + fileInfo[1] 
+		String message = "REMOVED" + " " + this.peer.getProtocolVersion() + " " + this.peer.getServerID() + " " + fileInfo[1] 
 				+ " " + fileInfo[0] + " ";
 		message = message + EventHandler.CRLF + EventHandler.CRLF;
 		

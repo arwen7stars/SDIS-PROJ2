@@ -64,7 +64,7 @@ public class State {
 	
 	private void getInfoStateDisk() {
 		this.state += "\n--- Disk Info ---";
-		this.state += "\n- Disk Space: "+this.peer.getDiskSpace() / 1000 + " KBytes";
+		this.state += "\n- Disk Space: "+this.peer.getDiskMaxSpace() / 1000 + " KBytes";
 		this.state += "\n- Disk Used: "+this.peer.getDiskUsed() / 1000 + " KBytes";
 		
 		this.state += "\n";

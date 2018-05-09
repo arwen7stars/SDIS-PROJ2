@@ -10,6 +10,8 @@ import java.util.Scanner;
 
 import javax.net.ssl.SSLSocket;
 
+import server.Server;
+
 public class ClientChannel implements Runnable {
 	private Peer peer;
 	private SSLSocket socket;
@@ -31,10 +33,10 @@ public class ClientChannel implements Runnable {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		/*Scanner scanner = new Scanner(System.in);
+		//Scanner scanner = new Scanner(System.in);
 
 		while(true) {			
-			System.out.print("Enter something: ");
+			/*System.out.print("Enter something: ");
 			String input = scanner.nextLine();
             out.println(input);
             
@@ -45,10 +47,10 @@ public class ClientChannel implements Runnable {
 				e1.printStackTrace();
 			}*/
 			
-			/*String msg = null;
+			String msg = null;
 			
 			try {
-				System.out.println("Peer socket " + peer.getID() + " listening to messages from other sockets!");
+				System.out.println("Peer socket " + peer.getServerID() + " listening to messages from other sockets!");
 
 				msg = in.readLine();
 			} catch (IOException e) {
@@ -56,10 +58,27 @@ public class ClientChannel implements Runnable {
 			}
 			
 			if(msg != null) {
-				System.out.println(msg);
+				String[] parts = msg.split(" ");
+				
+				switch(parts[0]) {
+					case "PEER":
+						String host = parts[1];
+						int id = Integer.parseInt(parts[2]);
+						int portMC = Integer.parseInt(parts[3]);
+						int portMDB = Integer.parseInt(parts[4]);
+						int portMDR = Integer.parseInt(parts[5]);
+						
+						this.peer.addPeerEndpoint(host, id, portMC, portMDB, portMDR);
+						break;
+					case "DONE":
+						this.peer.setCollectedAllPeers(true);
+						break;
+					default:
+						System.out.println("Client:: Error processing message.");
+				}
 			}
 			
-		}*/        
+		}      
 	}
 	
 	public void sendMessage(String message)

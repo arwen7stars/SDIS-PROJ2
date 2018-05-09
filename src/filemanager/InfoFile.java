@@ -21,11 +21,11 @@ public class InfoFile {
 	// Method to load the non volatile memory about the backup files
 	@SuppressWarnings("unchecked")
 	public synchronized boolean loadFilesInfo() {
-		File file = new File(Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + this.peer.getID() + "/" + Peer.FILES_INFO);
+		File file = new File(Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + this.peer.getServerID() + "/" + Peer.FILES_INFO);
 		if (file.exists()) {
 			try {
 				ObjectInputStream serverStream = new ObjectInputStream(new FileInputStream(
-						Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + this.peer.getID() + "/" + Peer.FILES_INFO));
+						Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + this.peer.getServerID() + "/" + Peer.FILES_INFO));
 				
 				this.peer.setFilesIdentifiers((ConcurrentHashMap<String, String>) serverStream.readObject());
 				this.peer.setBackupState((ConcurrentHashMap<String, Boolean>) serverStream.readObject());
@@ -48,11 +48,11 @@ public class InfoFile {
 	public synchronized void saveFilesInfoFile() {
 		try {
 			ObjectOutputStream serverStream = new ObjectOutputStream(new FileOutputStream(
-					Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + peer.getID() + "/" + Peer.FILES_INFO));
+					Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + peer.getServerID() + "/" + Peer.FILES_INFO));
 
 			serverStream.writeObject(this.peer.getFilesIdentifiers());
 			serverStream.writeObject(this.peer.getBackupState());
-			serverStream.writeObject(this.peer.getDiskSpace());
+			serverStream.writeObject(this.peer.getDiskMaxSpace());
 			serverStream.writeObject(this.peer.getDiskUsed());
 
 			serverStream.close();
@@ -62,7 +62,7 @@ public class InfoFile {
 	}
 
 	public void removeFileInfo(String fileID) {
-		Iterator<String> it = this.peer.getChunkHosts().keySet().iterator();
+		Iterator<String> it = this.peer.getChunksHosts().keySet().iterator();
 
 		while (it.hasNext()) {
 			String key = it.next();

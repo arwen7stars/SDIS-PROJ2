@@ -64,7 +64,7 @@ public class EventHandler implements Runnable {
 	@Override
 	public void run() {
 		// Check if it was me that sent the message - Ignore
-		if (Integer.parseInt(header[2]) == this.peer.getID()) {
+		if (Integer.parseInt(header[2]) == this.peer.getServerID()) {
 			return;
 		}
 
@@ -96,14 +96,14 @@ public class EventHandler implements Runnable {
 			this.peer.getDesiredReplicationDegrees().put(hashmapKey, Integer.parseInt(header[5]));
 
 			// Check if I already stored this chunk
-			CopyOnWriteArrayList<Integer> chunkHosts = peer.getChunkHosts().get(hashmapKey);
+			CopyOnWriteArrayList<Integer> chunkHosts = peer.getChunksHosts().get(hashmapKey);
 
-			if (chunkHosts != null && chunkHosts.contains(this.peer.getID())) {
+			if (chunkHosts != null && chunkHosts.contains(this.peer.getServerID())) {
 				return;
 			}
 
 			// Check if I have disk space to store the chunk
-			if (this.body.length + this.peer.getDiskUsed() > this.peer.getDiskSpace()) {
+			if (this.body.length + this.peer.getDiskUsed() > this.peer.getDiskMaxSpace()) {
 				return;
 			}
 
@@ -138,8 +138,8 @@ public class EventHandler implements Runnable {
 			hashmapKey = header[4] + "_" + header[3];
 
 			//Ignore If I don't have the chunk stored
-			if (this.peer.getChunkHosts().get(hashmapKey) != null
-					&& !this.peer.getChunkHosts().get(hashmapKey).contains(this.peer.getID())) {
+			if (this.peer.getChunksHosts().get(hashmapKey) != null
+					&& !this.peer.getChunksHosts().get(hashmapKey).contains(this.peer.getServerID())) {
 				return;
 			}
 
@@ -265,11 +265,11 @@ public class EventHandler implements Runnable {
 	}
 	
 	private byte[] makePutChunkRequest(String fileID, String chunkNr, int replicationDegree) {
-		String message = "PUTCHUNK" + " " + this.peer.getProtocolVersion() + " " +this.peer.getID() + " " + fileID + " " + chunkNr +
+		String message = "PUTCHUNK" + " " + this.peer.getProtocolVersion() + " " +this.peer.getServerID() + " " + fileID + " " + chunkNr +
 				" " + replicationDegree + " ";
 		message = message + EventHandler.CRLF + EventHandler.CRLF;
 		
-		byte [] chunk = FileChunk.getChunk(peer.getID(), fileID, chunkNr);
+		byte [] chunk = FileChunk.getChunk(peer.getServerID(), fileID, chunkNr);
 		
 		byte [] header = message.getBytes();
 		byte[] packet = new byte[header.length + chunk.length];
@@ -280,7 +280,7 @@ public class EventHandler implements Runnable {
 	}
 
 	private byte[] makeStoreChunkReply(String fileID, String chunkNr) {
-		String message = "STORED " + this.peer.getProtocolVersion() + " " + this.peer.getID() + " " + fileID + " "
+		String message = "STORED " + this.peer.getProtocolVersion() + " " + this.peer.getServerID() + " " + fileID + " "
 				+ chunkNr + " ";
 		message = message + EventHandler.CRLF + EventHandler.CRLF;
 
@@ -288,9 +288,9 @@ public class EventHandler implements Runnable {
 	}
 
 	private byte[] makeChunkMessage(String fileID, String chunkNr) {
-		byte[] chunk = FileChunk.getChunk(peer.getID(), fileID, chunkNr);
+		byte[] chunk = FileChunk.getChunk(peer.getServerID(), fileID, chunkNr);
 
-		String message = "CHUNK " + this.peer.getProtocolVersion() + " " + this.peer.getID() + " " + fileID + " "
+		String message = "CHUNK " + this.peer.getProtocolVersion() + " " + this.peer.getServerID() + " " + fileID + " "
 				+ chunkNr + " ";
 		message = message + EventHandler.CRLF + EventHandler.CRLF;
 
@@ -303,7 +303,7 @@ public class EventHandler implements Runnable {
 	}
 
 	Runnable storeChunk = () -> {
-		String filePath = Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + peer.getID() + "/" + Peer.CHUNKS_FOLDER + "/"
+		String filePath = Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + peer.getServerID() + "/" + Peer.CHUNKS_FOLDER + "/"
 				+ this.header[4] + "_" + this.header[3];
 
 		try (FileOutputStream fos = new FileOutputStream(filePath)) {
@@ -314,7 +314,7 @@ public class EventHandler implements Runnable {
 
 		// Save chunks information
 		this.peer.getChunksStoredSize().put(this.header[4] + "_" + this.header[3], this.body.length);
-		this.peer.getChunkInfo().storeChunkInfo(this.peer.getID(), this.header[3], Integer.parseInt(this.header[4]));
+		this.peer.getChunkInfo().storeChunkInfo(this.peer.getServerID(), this.header[3], Integer.parseInt(this.header[4]));
 		
 		// Update disk usage
 		this.peer.setDiskUsed(this.peer.getDiskUsed() + this.body.length);

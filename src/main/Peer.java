@@ -2,10 +2,11 @@ package main;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.Socket;
 import java.rmi.RemoteException;
+import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -19,7 +20,17 @@ import protocols.Reclaim;
 import protocols.Restore;
 import protocols.State;
 
-public class Peer implements IRMI {
+public class Peer implements IRMI {	
+	public class PeerEndpoint {
+		public String host;
+		public int id;
+		public int portMC;
+		public int portMDB;
+		public int portMDR;
+	};
+	
+	private ArrayList<PeerEndpoint> endpoints;
+	private boolean collectedAllPeers;
 	
 	// Global configurations
 	public static final String PEERS_FOLDER = "Peers";
@@ -177,9 +188,9 @@ public class Peer implements IRMI {
 
 	private void connectToMasterServer() {
 		// Set client key and truststore
-		System.setProperty("javax.net.ssl.trustStore", "SSL/truststore");
+		System.setProperty("javax.net.ssl.trustStore", "../SSL/truststore");
 		System.setProperty("javax.net.ssl.trustStorePassword", "123456");
-		System.setProperty("javax.net.ssl.keyStore", "SSL/client.keys");
+		System.setProperty("javax.net.ssl.keyStore", "../SSL/client.keys");
 		System.setProperty("javax.net.ssl.keyStorePassword", "123456");
 		
 		// connects to master peer by its port
@@ -195,8 +206,6 @@ public class Peer implements IRMI {
 		this.clientChannel = new ClientChannel(this, socket);
 		new Thread(clientChannel).start();
 	}
-
-	public Peer() {}
 
 	// Send delete message to MC channel
 	public void sendDeleteRequest(String fileName) {
@@ -245,147 +254,194 @@ public class Peer implements IRMI {
 	}
 
 	public void sendReplyToPeer(channelType type, byte[] packet) throws IOException {
-		switch (type) {
-		case MC:
-			/*MulticastSocket socketMC = new MulticastSocket(portMC);
+		this.collectedAllPeers = false;
+		this.endpoints = new ArrayList<PeerEndpoint>();
+		
+		while(!this.collectedAllPeers) {}
+		
+		for(PeerEndpoint peer : endpoints) {
+			InetAddress address = InetAddress.getByName(peer.host);
+			
+			int port = -1;
+			switch (type) {
+			case MC:
+				port = peer.portMC;
+				break;
+			case MDB:
+				port = peer.portMDB;
+				break;
+			case MDR:
+				port = peer.portMDR;
+				break;
+			}
 
-			DatagramPacket sendPacketMC = new DatagramPacket(packet, packet.length, addressMC, portMC);
-			socketMC.send(sendPacketMC);
-
-			socketMC.close();*/
-			break;
-
-		case MDB:
-			/*MulticastSocket socketMDB = new MulticastSocket(portMDB);
-
-			DatagramPacket sendPacketMDB = new DatagramPacket(packet, packet.length, addressMDB, portMDB);
-			socketMDB.send(sendPacketMDB);
-
-			socketMDB.close();*/
-			break;
-
-		case MDR:
-			/*MulticastSocket socketMDR = new MulticastSocket(portMDR);
-
-			DatagramPacket sendPacketMDR = new DatagramPacket(packet, packet.length, addressMDR, portMDR);
-			socketMDR.send(sendPacketMDR);
-
-			socketMDR.close();*/
-
-			break;
+			DatagramPacket sendPacket = new DatagramPacket(packet, packet.length, address, port);
+			senderSocket.send(sendPacket);
 		}
 	}
 	
-	public void setSenderSocket(DatagramSocket senderSocket) {
-		this.senderSocket = senderSocket;
-	}
-
-	public ConcurrentHashMap<String, CopyOnWriteArrayList<Integer>> getChunksHosts() {
-		return chunksHosts;
-	}
-	
-	public void setBackupState(ConcurrentHashMap<String, Boolean> backupState) {
-		this.backupState = backupState;
-	}
-
-	public void setFilesIdentifiers(ConcurrentHashMap<String, String> filesIdentifiers) {
-		this.filesIdentifiers = filesIdentifiers;
-	}
-
-	public void setChunksHosts(ConcurrentHashMap<String, CopyOnWriteArrayList<Integer>> chunksHosts) {
-		this.chunksHosts = chunksHosts;
-	}
-
-	public void setChunksStoredSize(ConcurrentHashMap<String, Integer> chunksStoredSize) {
-		this.chunksStoredSize = chunksStoredSize;
-	}
-
-	public void setActualReplicationDegrees(ConcurrentHashMap<String, Integer> actualReplicationDegrees) {
-		this.actualReplicationDegrees = actualReplicationDegrees;
-	}
-
-	public void setDesiredReplicationDegrees(ConcurrentHashMap<String, Integer> desiredReplicationDegrees) {
-		this.desiredReplicationDegrees = desiredReplicationDegrees;
+	public void addPeerEndpoint(String host, int id, int portMC, int portMDB, int portMDR) {
+		PeerEndpoint peer = new PeerEndpoint();
+		
+		peer.host = host;
+		peer.id = id;
+		peer.portMC = portMC;
+		peer.portMDB = portMDB;
+		peer.portMDR = portMDR;
+		
+		endpoints.add(peer);
 	}
 	
-	public void setDiskUsed(long diskUsed) {
-		this.diskUsed = diskUsed;
+	public String getPeerState() {
+		return new State(this).getState();
+	}
+	
+	public ArrayList<PeerEndpoint> getEndpoints() {
+		return endpoints;
 	}
 
-	public void setDiskMaxSpace(long diskSpace) {
-		this.diskMaxSpace = diskSpace;
+	public boolean isCollectedAllPeers() {
+		return collectedAllPeers;
 	}
 
-	public String getProtocolVersion() {
-		return this.protocolVersion;
+	public void setCollectedAllPeers(boolean collectedAllPeers) {
+		this.collectedAllPeers = collectedAllPeers;
 	}
 
-	public int getID() {
-		return this.serverID;
-	}
-
-	public ConcurrentHashMap<String, Integer> getChunksStoredSize() {
-		return this.chunksStoredSize;
-	}
-
-	public ConcurrentHashMap<String, String> getFilesIdentifiers() {
-		return this.filesIdentifiers;
-	}
-
-	public ConcurrentHashMap<String, Boolean> getBackupState() {
-		return this.backupState;
-	}
-
-	public ConcurrentHashMap<String, Integer> getDesiredReplicationDegrees() {
-		return this.desiredReplicationDegrees;
-	}
-
-	public ConcurrentHashMap<String, Integer> getActualReplicationDegrees() {
-		return this.actualReplicationDegrees;
-	}
-
-	public ConcurrentHashMap<String, CopyOnWriteArrayList<Integer>> getChunkHosts() {
-		return this.chunksHosts;
-	}
-
-	public ConcurrentHashMap<String, byte[]> getRestoredChunks() {
-		return this.restoredChunks;
-	}
-
-	public CopyOnWriteArrayList<String> getWaitRestoredChunks() {
-		return this.waitRestoredChunks;
-	}
-
-	public CopyOnWriteArrayList<String> getReceivedChunkMessages() {
-		return this.receivedChunkMessages;
-	}
-
-	public CopyOnWriteArrayList<String> getReceivedPutChunkMessages() {
-		return this.receivedPutChunkMessages;
-	}
-
-	public long getDiskSpace() {
-		return this.diskMaxSpace;
-	}
-
-	public long getDiskUsed() {
-		return this.diskUsed;
+	public SSLSocket getSocket() {
+		return socket;
 	}
 
 	public DatagramSocket getSenderSocket() {
 		return senderSocket;
 	}
 
+	public ClientChannel getClientChannel() {
+		return clientChannel;
+	}
+
+	public String getProtocolVersion() {
+		return protocolVersion;
+	}
+
+	public int getServerID() {
+		return serverID;
+	}
+
+	public ChannelListener getMcChannel() {
+		return mcChannel;
+	}
+
+	public ChannelListener getMdbChannel() {
+		return mdbChannel;
+	}
+
+	public ChannelListener getMdrChannel() {
+		return mdrChannel;
+	}
+
 	public InfoFile getFileInfo() {
 		return fileInfo;
 	}
-	
+
 	public InfoChunk getChunkInfo() {
 		return chunkInfo;
 	}
-	
-	public String getPeerState() {
-		return new State(this).getState();
+
+	public ConcurrentHashMap<String, String> getFilesIdentifiers() {
+		return filesIdentifiers;
+	}
+
+	public void setFilesIdentifiers(ConcurrentHashMap<String, String> filesIdentifiers) {
+		this.filesIdentifiers = filesIdentifiers;
+	}
+
+	public ConcurrentHashMap<String, Boolean> getBackupState() {
+		return backupState;
+	}
+
+	public void setBackupState(ConcurrentHashMap<String, Boolean> backupState) {
+		this.backupState = backupState;
+	}
+
+	public ConcurrentHashMap<String, Integer> getChunksStoredSize() {
+		return chunksStoredSize;
+	}
+
+	public void setChunksStoredSize(ConcurrentHashMap<String, Integer> chunksStoredSize) {
+		this.chunksStoredSize = chunksStoredSize;
+	}
+
+	public ConcurrentHashMap<String, Integer> getActualReplicationDegrees() {
+		return actualReplicationDegrees;
+	}
+
+	public void setActualReplicationDegrees(ConcurrentHashMap<String, Integer> actualReplicationDegrees) {
+		this.actualReplicationDegrees = actualReplicationDegrees;
+	}
+
+	public ConcurrentHashMap<String, Integer> getDesiredReplicationDegrees() {
+		return desiredReplicationDegrees;
+	}
+
+	public void setDesiredReplicationDegrees(ConcurrentHashMap<String, Integer> desiredReplicationDegrees) {
+		this.desiredReplicationDegrees = desiredReplicationDegrees;
+	}
+
+	public ConcurrentHashMap<String, CopyOnWriteArrayList<Integer>> getChunksHosts() {
+		return chunksHosts;
+	}
+
+	public void setChunksHosts(ConcurrentHashMap<String, CopyOnWriteArrayList<Integer>> chunksHosts) {
+		this.chunksHosts = chunksHosts;
+	}
+
+	public ConcurrentHashMap<String, byte[]> getRestoredChunks() {
+		return restoredChunks;
+	}
+
+	public void setRestoredChunks(ConcurrentHashMap<String, byte[]> restoredChunks) {
+		this.restoredChunks = restoredChunks;
+	}
+
+	public CopyOnWriteArrayList<String> getWaitRestoredChunks() {
+		return waitRestoredChunks;
+	}
+
+	public void setWaitRestoredChunks(CopyOnWriteArrayList<String> waitRestoredChunks) {
+		this.waitRestoredChunks = waitRestoredChunks;
+	}
+
+	public CopyOnWriteArrayList<String> getReceivedChunkMessages() {
+		return receivedChunkMessages;
+	}
+
+	public void setReceivedChunkMessages(CopyOnWriteArrayList<String> receivedChunkMessages) {
+		this.receivedChunkMessages = receivedChunkMessages;
+	}
+
+	public CopyOnWriteArrayList<String> getReceivedPutChunkMessages() {
+		return receivedPutChunkMessages;
+	}
+
+	public void setReceivedPutChunkMessages(CopyOnWriteArrayList<String> receivedPutChunkMessages) {
+		this.receivedPutChunkMessages = receivedPutChunkMessages;
+	}
+
+	public long getDiskMaxSpace() {
+		return diskMaxSpace;
+	}
+
+	public void setDiskMaxSpace(long diskMaxSpace) {
+		this.diskMaxSpace = diskMaxSpace;
+	}
+
+	public long getDiskUsed() {
+		return diskUsed;
+	}
+
+	public void setDiskUsed(long diskUsed) {
+		this.diskUsed = diskUsed;
 	}
 
 	@Override

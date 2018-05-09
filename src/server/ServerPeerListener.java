@@ -22,7 +22,7 @@ public class ServerPeerListener implements Runnable {
 	@Override
 	public void run() {
 		try {
-			//PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+			PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
 			BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 		
 			/*String line = null;
@@ -53,9 +53,10 @@ public class ServerPeerListener implements Runnable {
 							this.MDRPort = Integer.parseInt(parts[4]);
 														
 							break;
+						case "GETPEERS":
+							out.println(Server.getPeers());
 						default:
-							System.out.println("ServerPeerListener:: Error processing message.");
-						
+							System.out.println("Server:: Error processing message.");
 					}
 				}
 			}

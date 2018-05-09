@@ -15,12 +15,12 @@ public class RunPeer {
 		}
 		int serverID = Integer.valueOf(args[0]);
 
-		String rmiAddress = "rmi"+serverID;
+		String rmiAddress = "peer"+serverID;
 
 		Peer peer = new Peer("1.0", serverID);
 		
 		// Start RMI - Client Connection 
-		/*try
+		try
 		{
 		    IRMI rmi = (IRMI) UnicastRemoteObject.exportObject((Remote) peer, 0);
 		    Registry registry = LocateRegistry.getRegistry();
@@ -29,7 +29,7 @@ public class RunPeer {
 		catch (RemoteException e)
 		{
 		    e.printStackTrace();
-		}*/
+		}
 	
 	}
 }

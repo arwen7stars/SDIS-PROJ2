@@ -96,7 +96,7 @@ public class FileChunk implements Callable<Boolean> {
 		String hashmapKey = this.number + "_" + this.fileID;
 		boolean backupDone = false;
 		
-		if(this.peer.getChunkHosts().get(hashmapKey) != null) {
+		if(this.peer.getChunksHosts().get(hashmapKey) != null) {
 			int actualReplicationDegree = this.peer.getActualReplicationDegrees().get(hashmapKey);
 			
 			if(actualReplicationDegree >= this.replicationDegree) {					
@@ -114,7 +114,7 @@ public class FileChunk implements Callable<Boolean> {
 	};
 	
 	private byte[] makePutChunkRequest() {
-		String message = "PUTCHUNK" + " " + this.peer.getProtocolVersion() + " " +this.peer.getID() + " " + this.fileID + " " + this.number +
+		String message = "PUTCHUNK" + " " + this.peer.getProtocolVersion() + " " +this.peer.getServerID() + " " + this.fileID + " " + this.number +
 				" " + this.replicationDegree + " ";
 		message = message + EventHandler.CRLF + EventHandler.CRLF;
 		

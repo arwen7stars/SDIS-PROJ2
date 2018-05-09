@@ -28,7 +28,7 @@ public class Restore implements Runnable {
 		this.fileChunks = new HashMap<Integer, byte[]>();
 		this.filePath = Peer.PEERS_FOLDER + "/" + Peer.SHARED_FOLDER + "/" + filename;
 		this.peer = peer;
-		this.newFilePath = Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + this.peer.getID() + "/" + Peer.FILES_FOLDER + "/" + filename;
+		this.newFilePath = Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + this.peer.getServerID() + "/" + Peer.FILES_FOLDER + "/" + filename;
 		this.fileID = new FileIdentifier(this.filePath).toString();
 	}
 
@@ -127,7 +127,7 @@ public class Restore implements Runnable {
 	};
 
 	private byte[] makeGetChunkMessage(String fileID, int chunkNr) {
-		String message = "GETCHUNK " + this.peer.getProtocolVersion() + " " + this.peer.getID() + " " + fileID + " "
+		String message = "GETCHUNK " + this.peer.getProtocolVersion() + " " + this.peer.getServerID() + " " + fileID + " "
 				+ chunkNr + " ";
 		message = message + EventHandler.CRLF + EventHandler.CRLF;
 
