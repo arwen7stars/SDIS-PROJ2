@@ -33,8 +33,9 @@ public class Peer implements IRMI {
 	public static final String FILES_INFO = "files_info.txt";
 	
 	// Network configurations
-	private Socket socket;
+	private SSLSocket socket;
 	private DatagramSocket senderSocket;
+	private ClientChannel clientChannel;
 
 	// Peer configurations
 	private String protocolVersion;
@@ -162,7 +163,16 @@ public class Peer implements IRMI {
 		new Thread(mdrChannel).start();		
 
 		// allows to send messages to other peers (including to master peer)
-		setSenderSocket(new DatagramSocket());
+		this.senderSocket = new DatagramSocket();
+		
+		String msg = "REGISTER ";
+
+		msg += serverID + " ";
+		msg += mcChannel.getPort() + " ";
+		msg += mdbChannel.getPort() + " ";
+		msg += mdrChannel.getPort();
+		
+		clientChannel.sendMessage(msg);
 	}
 
 	private void connectToMasterServer() {
@@ -175,14 +185,15 @@ public class Peer implements IRMI {
 		// connects to master peer by its port
 		SSLSocketFactory sf = (SSLSocketFactory) SSLSocketFactory.getDefault();
 		try {
-			socket = sf.createSocket("localhost", 5000);
+			socket = (SSLSocket) sf.createSocket("localhost", 5000);
 		} catch (IOException e) {
 			System.out.println("Can't connect to master server");
 			System.exit(-1);	// Shutdown the peer
 		}
 		
 		// allows to receive messages from master peer
-		new Thread(new ClientChannel(this, (SSLSocket) socket)).start();
+		this.clientChannel = new ClientChannel(this, socket);
+		new Thread(clientChannel).start();
 	}
 
 	public Peer() {}

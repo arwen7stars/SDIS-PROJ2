@@ -1,8 +1,6 @@
 package server;
 
 import java.io.IOException;
-import java.net.ServerSocket;
-import java.net.Socket;
 import java.util.ArrayList;
 
 import javax.net.ssl.SSLServerSocket;
@@ -57,21 +55,17 @@ public class Server {
 	public static String getPeers() {
 		String s = "";
 		
-		/*for(ServerPeerListener peerChannel : peers)
+		for(ServerPeerListener peer : peers)
 		{
-			if(peer.getPeerID() != null)
-			{
-				Socket socket = peer.getSocket();
+			SSLSocket socket = peer.getSocket();
 		
-				s += socket.getInetAddress().getHostAddress() + ":" + socket.getPort() + " ";
-				s += peer.getPeerID() + " ";
-				s += peer.getMCPort() + " ";
-				s += peer.getMDBPort() + " ";
-				s += peer.getMDBPort() + " ";
-				s += peer.getSenderPort();
-				s += "\n";
-			}
-		}*/
+			s += socket.getInetAddress().getHostAddress() + " ";
+			s += peer.getServerID() + " ";
+			s += peer.getMCPort() + " ";
+			s += peer.getMDBPort() + " ";
+			s += peer.getMDBPort() + " ";
+			s += "\n";
+		}
 		return s;
 	}
 }

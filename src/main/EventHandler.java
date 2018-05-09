@@ -106,13 +106,6 @@ public class EventHandler implements Runnable {
 			if (this.body.length + this.peer.getDiskUsed() > this.peer.getDiskSpace()) {
 				return;
 			}
-			
-			/*
-			//If is an enhancement peer it will check the perceived replication degree before store the chunk
-			if(this.peer.getProtocolVersion().equals("2.0") && fulfilledRep(hashmapKey)) {
-				return;
-			}
-			*/
 
 			random = new Random();
 			waitTime = random.nextInt(400);

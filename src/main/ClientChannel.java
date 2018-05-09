@@ -31,7 +31,7 @@ public class ClientChannel implements Runnable {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		Scanner scanner = new Scanner(System.in);
+		/*Scanner scanner = new Scanner(System.in);
 
 		while(true) {			
 			System.out.print("Enter something: ");
@@ -43,7 +43,7 @@ public class ClientChannel implements Runnable {
 				System.out.println("Response: " + in.readLine());
 			} catch (IOException e1) {
 				e1.printStackTrace();
-			}
+			}*/
 			
 			/*String msg = null;
 			
@@ -57,13 +57,14 @@ public class ClientChannel implements Runnable {
 			
 			if(msg != null) {
 				System.out.println(msg);
-			}*/
+			}
 			
-		}            
+		}*/        
 	}
 	
 	public void sendMessage(String message)
 	{
+		System.out.println("Sent message " + message);
 		out.println(message);
 	}
 	
