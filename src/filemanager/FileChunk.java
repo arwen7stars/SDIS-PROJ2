@@ -33,7 +33,7 @@ public class FileChunk implements Callable<Boolean> {
 	public Boolean call() {
 		byte [] packet = makePutChunkRequest();
 		try {
-			this.peer.sendReplyToPeer(Peer.channelType.MDB, packet);
+			this.peer.sendReplyToPeers(Peer.channelType.MDB, packet);
 		} catch (IOException e1) {
 			System.out.println("Error sending putchunk message");
 		}
@@ -107,7 +107,7 @@ public class FileChunk implements Callable<Boolean> {
 		//If the desired replication degree has not been fulfilled it sends again the putchunk request
 		if(!backupDone) {
 			byte [] packet = makePutChunkRequest();
-			this.peer.sendReplyToPeer(Peer.channelType.MDB, packet);
+			this.peer.sendReplyToPeers(Peer.channelType.MDB, packet);
 		}
 		
 		return backupDone;

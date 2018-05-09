@@ -36,8 +36,9 @@ public class ServerPeerListener implements Runnable {
 				String msg = null;
 				
 				try {
+					System.out.println("\nWaiting for peers to comunicate with me...");
 					msg = in.readLine();
-					System.out.println("Received message " + msg);
+					System.out.println("\nReceived message from peer: " + msg);
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
@@ -51,6 +52,8 @@ public class ServerPeerListener implements Runnable {
 							this.MCPort = Integer.parseInt(parts[2]);
 							this.MDBPort = Integer.parseInt(parts[3]);
 							this.MDRPort = Integer.parseInt(parts[4]);
+							
+							System.out.println("Peer "+serverID+ " registered with success.");
 														
 							break;
 						case "GETPEERS":

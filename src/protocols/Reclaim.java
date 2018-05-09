@@ -66,7 +66,7 @@ public class Reclaim implements Runnable {
 		for(String key : chunksDeleted) {
 			byte [] packet = makeRemoveMessage(key);
 			try {
-				this.peer.sendReplyToPeer(Peer.channelType.MC, packet);
+				this.peer.sendReplyToPeers(Peer.channelType.MC, packet);
 			} catch (IOException e) {
 				System.out.println("Error sending removed message.");
 			}

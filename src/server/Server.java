@@ -23,10 +23,14 @@ public class Server {
 		Peer.makeDirectory(Peer.MASTER_FOLDER);
 		
 		// Set server key and truststore
-		System.setProperty("javax.net.ssl.trustStore", "../SSL/truststore");
+		//System.setProperty("javax.net.ssl.trustStore", "../SSL/truststore"); UBUNTU
+		System.setProperty("javax.net.ssl.trustStore", "SSL/truststore");
 		System.setProperty("javax.net.ssl.trustStorePassword", "123456");
-		System.setProperty("javax.net.ssl.keyStore", "../SSL/server.keys");
+		//System.setProperty("javax.net.ssl.keyStore", "../SSL/server.keys"); UBUNTU
+		System.setProperty("javax.net.ssl.keyStore", "SSL/server.keys");
 		System.setProperty("javax.net.ssl.keyStorePassword", "123456");
+		
+		
 		
 		SSLServerSocketFactory ssf = (SSLServerSocketFactory) SSLServerSocketFactory.getDefault(); 
 		
@@ -53,6 +57,8 @@ public class Server {
 	}
 	
 	public static String getPeers() {
+		//TO DO - Destroir sockets que estão mortos (de peers que se desligaram)
+		
 		String s = "";
 		
 		for(ServerPeerListener peer : peers)

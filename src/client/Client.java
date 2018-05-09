@@ -14,14 +14,14 @@ public class Client {
 	private static ArrayList<String> operands;
 
 	public static void main(String args[]) {
-		/*access_rmi = "4";
+		access_rmi = "peer1";
 		operation = "BACKUP";
 		operands = new ArrayList<String>();
 		operands.add("05remoting.pdf");
-		operands.add("2");
-		*/
-		if(!initArgs(args))
-			return;
+		operands.add("1");
+		
+		/*if(!initArgs(args))
+			return;*/
 		
 		try {
 			Registry registry = LocateRegistry.getRegistry("localhost");

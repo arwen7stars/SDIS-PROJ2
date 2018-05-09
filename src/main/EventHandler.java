@@ -158,7 +158,7 @@ public class EventHandler implements Runnable {
 			if (!chunkAlreadySent) {
 				byte[] packet = makeChunkMessage(header[3], header[4]);
 				try {
-					this.peer.sendReplyToPeer(Peer.channelType.MDR, packet);
+					this.peer.sendReplyToPeers(Peer.channelType.MDR, packet);
 				} catch (IOException e) {
 					System.out.println("Error sending chunk message");
 				}
@@ -257,7 +257,7 @@ public class EventHandler implements Runnable {
 		if (!chunkBackedUp) {
 			byte[] packet = makePutChunkRequest(header[3], header[4], replication);
 			try {
-				this.peer.sendReplyToPeer(Peer.channelType.MDR, packet);
+				this.peer.sendReplyToPeers(Peer.channelType.MDR, packet);
 			} catch (IOException e) {
 				System.out.println("Error sending chunk message");
 			}
@@ -326,7 +326,7 @@ public class EventHandler implements Runnable {
 		// Send message STORED
 		byte[] packet = makeStoreChunkReply(this.header[3], this.header[4]);
 		try {
-			this.peer.sendReplyToPeer(Peer.channelType.MC, packet);
+			this.peer.sendReplyToPeers(Peer.channelType.MC, packet);
 		} catch (IOException e) {
 			System.out.println("Error sending message to multicast");
 		}

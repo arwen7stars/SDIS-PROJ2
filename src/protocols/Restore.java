@@ -54,7 +54,7 @@ public class Restore implements Runnable {
 				byte[] packet = makeGetChunkMessage(this.fileID, this.actualChunk);
 
 				try {
-					this.peer.sendReplyToPeer(Peer.channelType.MC, packet);
+					this.peer.sendReplyToPeers(Peer.channelType.MC, packet);
 					this.peer.getWaitRestoredChunks().add(this.actualChunk + "_" + this.fileID);
 				} catch (IOException e) {
 					System.out.println("Error sending getchunk message");

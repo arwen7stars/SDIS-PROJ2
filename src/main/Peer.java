@@ -29,8 +29,8 @@ public class Peer implements IRMI {
 		public int portMDR;
 	};
 	
-	private ArrayList<PeerEndpoint> endpoints;
-	private boolean collectedAllPeers;
+	private volatile ArrayList<PeerEndpoint> endpoints;
+	private volatile boolean collectedAllPeers;
 	
 	// Global configurations
 	public static final String PEERS_FOLDER = "Peers";
@@ -164,9 +164,6 @@ public class Peer implements IRMI {
 		mdrChannel = new ChannelListener(this);
 		
 		connectToMasterServer();
-	
-		//System.setProperty("javax.net.ssl.trustStore", "SSL/mykeystore");
-		//System.setProperty("javax.net.ssl.trustStorePassword", "1234567890");
 		
 		// these channels will receive messages from other peers (other than master peer)
 		new Thread(mcChannel).start();
@@ -188,9 +185,11 @@ public class Peer implements IRMI {
 
 	private void connectToMasterServer() {
 		// Set client key and truststore
-		System.setProperty("javax.net.ssl.trustStore", "../SSL/truststore");
+		//System.setProperty("javax.net.ssl.trustStore", "../SSL/truststore"); UBUNTU
+		System.setProperty("javax.net.ssl.trustStore", "SSL/truststore");
 		System.setProperty("javax.net.ssl.trustStorePassword", "123456");
-		System.setProperty("javax.net.ssl.keyStore", "../SSL/client.keys");
+		//System.setProperty("javax.net.ssl.keyStore", "../SSL/client.keys"); UBUNTU
+		System.setProperty("javax.net.ssl.keyStore", "SSL/client.keys");
 		System.setProperty("javax.net.ssl.keyStorePassword", "123456");
 		
 		// connects to master peer by its port
@@ -216,7 +215,7 @@ public class Peer implements IRMI {
 			message = message + EventHandler.CRLF + EventHandler.CRLF;
 
 			try {
-				sendReplyToPeer(Peer.channelType.MC, message.getBytes());
+				sendReplyToPeers(Peer.channelType.MC, message.getBytes());
 			} catch (IOException e) {
 				System.out.println("Error sending delete message to multicast.");
 			}
@@ -253,11 +252,16 @@ public class Peer implements IRMI {
 		this.chunksStoredSize = new ConcurrentHashMap<String, Integer>();
 	}
 
-	public void sendReplyToPeer(channelType type, byte[] packet) throws IOException {
+	public void sendReplyToPeers(channelType type, byte[] packet) throws IOException {
 		this.collectedAllPeers = false;
 		this.endpoints = new ArrayList<PeerEndpoint>();
 		
+		System.out.println("Vou pedir os Peers existentes");
+		this.clientChannel.sendMessage("GETPEERS");
+		
 		while(!this.collectedAllPeers) {}
+		
+		System.out.println("Já os tenho");
 		
 		for(PeerEndpoint peer : endpoints) {
 			InetAddress address = InetAddress.getByName(peer.host);

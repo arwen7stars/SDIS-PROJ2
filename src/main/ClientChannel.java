@@ -16,23 +16,21 @@ public class ClientChannel implements Runnable {
 	private Peer peer;
 	private SSLSocket socket;
 	PrintWriter out;
+	BufferedReader in;
 	
 	public ClientChannel(Peer peer, SSLSocket socket) {
 		this.peer = peer;
 		this.socket = socket;
-	}
-	
-	@Override
-	public void run() {
-		out = null;
-		BufferedReader in = null;
-
 		try {
 			out = new PrintWriter(socket.getOutputStream(), true);
 			in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+	}
+	
+	@Override
+	public void run() {		
 		//Scanner scanner = new Scanner(System.in);
 
 		while(true) {			
@@ -62,8 +60,12 @@ public class ClientChannel implements Runnable {
 				
 				switch(parts[0]) {
 					case "PEER":
-						String host = parts[1];
 						int id = Integer.parseInt(parts[2]);
+						
+						if(id == this.peer.getServerID())
+							break;
+							
+						String host = parts[1];
 						int portMC = Integer.parseInt(parts[3]);
 						int portMDB = Integer.parseInt(parts[4]);
 						int portMDR = Integer.parseInt(parts[5]);
@@ -82,9 +84,9 @@ public class ClientChannel implements Runnable {
 	}
 	
 	public void sendMessage(String message)
-	{
-		System.out.println("Sent message " + message);
+	{		
 		out.println(message);
+		System.out.println("Sent message " + message);
 	}
 	
 	public void sendBytes(byte[] message)
