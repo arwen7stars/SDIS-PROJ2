@@ -5,7 +5,7 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.nio.file.Files;
 
-import main.Peer;
+import peer.Peer;
 
 public class Delete implements Runnable {
 	

@@ -1,4 +1,4 @@
-package main;
+package peer;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -23,6 +23,8 @@ public class ChannelListener implements Runnable {
 		while(true) {
 			byte[] requestPacket = new byte[64500];
 			DatagramPacket packet = new DatagramPacket(requestPacket, requestPacket.length);
+			
+			System.out.println("Peer socket " + peer.getServerID() + " listening to messages in 'multicast' channel...");
 
 			try {
 				socket.receive(packet);

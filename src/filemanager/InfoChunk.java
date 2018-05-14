@@ -9,7 +9,7 @@ import java.io.ObjectOutputStream;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import main.Peer;
+import peer.Peer;
 
 public class InfoChunk {
 	Peer peer;

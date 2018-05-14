@@ -1,4 +1,4 @@
-package main;
+package peer;
 
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
@@ -48,7 +48,7 @@ public class ClientChannel implements Runnable {
 			String msg = null;
 			
 			try {
-				System.out.println("Peer socket " + peer.getServerID() + " listening to messages from other sockets!");
+				System.out.println("Peer socket " + peer.getServerID() + " listening to messages from the server...");
 
 				msg = in.readLine();
 			} catch (IOException e) {

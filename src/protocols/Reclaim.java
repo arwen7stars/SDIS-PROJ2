@@ -4,8 +4,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 
-import main.EventHandler;
-import main.Peer;
+import peer.EventHandler;
+import peer.Peer;
 
 public class Reclaim implements Runnable {
 	

@@ -10,8 +10,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import main.EventHandler;
-import main.Peer;
+import peer.EventHandler;
+import peer.Peer;
 
 public class FileChunk implements Callable<Boolean> {
 	

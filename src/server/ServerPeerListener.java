@@ -24,15 +24,10 @@ public class ServerPeerListener implements Runnable {
 		try {
 			PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
 			BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-		
-			/*String line = null;
 			
-	        while((line = in.readLine()) != null){
-	            System.out.println(line);
-	            out.println(line);
-	        }*/
+			boolean alive = true;
 			
-			while(true) {
+			while(alive) {
 				String msg = null;
 				
 				try {
@@ -40,7 +35,9 @@ public class ServerPeerListener implements Runnable {
 					msg = in.readLine();
 					System.out.println("\nReceived message from peer: " + msg);
 				} catch (IOException e) {
-					e.printStackTrace();
+					// Peer disconnected so the socket has to be removed
+					Server.removePeerListener(this);
+					alive = false;
 				}
 				
 				if(msg != null) {
@@ -64,7 +61,8 @@ public class ServerPeerListener implements Runnable {
 				}
 			}
 		} catch (IOException e) {
-			e.printStackTrace();
+			// Peer disconnected so the socket has to be removed
+			Server.removePeerListener(this);
 		}
 	}
 

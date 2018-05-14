@@ -15,10 +15,10 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import filemanager.FileChunk;
 import filemanager.FileIdentifier;
+import peer.*;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import main.*;
 
 public class Backup implements Runnable {
 	private String fileID;

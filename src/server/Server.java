@@ -7,7 +7,7 @@ import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSocket;
 
-import main.Peer;
+import peer.Peer;
 
 public class Server {
 	private SSLServerSocket socket;
@@ -15,8 +15,7 @@ public class Server {
 	
 	public static void main(String args[]) {
 		peers = new ArrayList<ServerPeerListener>();
-		
-		Server server = new Server(5000);
+		new Server(5000);
 	}
 	
 	public Server(int port) {
@@ -28,9 +27,7 @@ public class Server {
 		System.setProperty("javax.net.ssl.trustStorePassword", "123456");
 		//System.setProperty("javax.net.ssl.keyStore", "../SSL/server.keys"); UBUNTU
 		System.setProperty("javax.net.ssl.keyStore", "SSL/server.keys");
-		System.setProperty("javax.net.ssl.keyStorePassword", "123456");
-		
-		
+		System.setProperty("javax.net.ssl.keyStorePassword", "123456");		
 		
 		SSLServerSocketFactory ssf = (SSLServerSocketFactory) SSLServerSocketFactory.getDefault(); 
 		
@@ -54,6 +51,11 @@ public class Server {
 		new Thread(peer_channel).start();
 		
 		peers.add(peer_channel);
+	}
+	
+	public static void removePeerListener(ServerPeerListener spl) {
+		peers.remove(spl);
+		System.out.println("Server removed dead socket");
 	}
 	
 	public static String getPeers() {

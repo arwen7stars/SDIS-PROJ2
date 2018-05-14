@@ -1,4 +1,4 @@
-package main; 
+package peer; 
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;

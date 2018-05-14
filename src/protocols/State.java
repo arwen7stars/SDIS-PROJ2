@@ -1,6 +1,6 @@
 package protocols;
 
-import main.Peer;
+import peer.Peer;
 
 public class State {
 	

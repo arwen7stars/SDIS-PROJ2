@@ -6,7 +6,7 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.ArrayList;
 
-import main.IRMI;
+import peer.IRMI;
 
 public class Client {
 	private static String access_rmi;

@@ -11,8 +11,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import filemanager.FileIdentifier;
-import main.EventHandler;
-import main.Peer;
+import peer.EventHandler;
+import peer.Peer;
 
 public class Restore implements Runnable {
 

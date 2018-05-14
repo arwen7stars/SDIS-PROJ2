@@ -9,7 +9,7 @@ import java.io.ObjectOutputStream;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 
-import main.Peer;
+import peer.Peer;
 
 public class InfoFile {
 	Peer peer;
