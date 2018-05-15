@@ -111,7 +111,7 @@ public class MetadataManager {
 	public synchronized void saveMetadata() {
 		try {
 			ObjectOutputStream serverStream = new ObjectOutputStream(new FileOutputStream(
-					Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + peer.getServerID() + "/" + Peer.FILES_INFO));
+					Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + peer.getServerID() + "/" + Peer.METADATA_FILE));
 			
 			//Files Info
 			serverStream.writeObject(this.filesIdentifiers);

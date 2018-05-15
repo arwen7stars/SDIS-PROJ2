@@ -36,8 +36,6 @@ public class Peer implements IRMI {
 	public static final String SHARED_FOLDER = "Shared";
 	public static final String FILES_FOLDER = "Files";
 	public static final String CHUNKS_FOLDER = "Chunks";
-	public static final String CHUNKS_INFO = "chunks_info.txt";
-	public static final String FILES_INFO = "files_info.txt";
 	public static final String METADATA_FILE = "metadata.txt";
 	
 	// Network configurations
