@@ -96,8 +96,8 @@ public class FileChunk implements Callable<Boolean> {
 		String hashmapKey = this.number + "_" + this.fileID;
 		boolean backupDone = false;
 		
-		if(this.peer.getChunksHosts().get(hashmapKey) != null) {
-			int actualReplicationDegree = this.peer.getActualReplicationDegrees().get(hashmapKey);
+		if(this.peer.getMetadataManager().getChunksHosts().get(hashmapKey) != null) {
+			int actualReplicationDegree = this.peer.getMetadataManager().getActualReplicationDegrees().get(hashmapKey);
 			
 			if(actualReplicationDegree >= this.replicationDegree) {					
 				backupDone = true;

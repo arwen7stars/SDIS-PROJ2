@@ -41,7 +41,7 @@ public class Backup implements Runnable {
 	@Override
 	public void run() {
 		//Check if the file has been backed up before
-		if(this.peer.getFilesIdentifiers().containsValue(this.fileID) && this.peer.getBackupState().get(this.fileID) == true) {
+		if(this.peer.getMetadataManager().getFilesIdentifiers().containsValue(this.fileID) && this.peer.getMetadataManager().getBackupState().get(this.fileID) == true) {
 			System.out.println("You have already done the backup of this file.");
 			return;
 		} 
@@ -51,7 +51,7 @@ public class Backup implements Runnable {
 			System.out.println("File size exceeds the limit.");
 		}
 		
-		String oldFileID = this.peer.getFilesIdentifiers().get(this.fileName);
+		String oldFileID = this.peer.getMetadataManager().getFilesIdentifiers().get(this.fileName);
 		
 		//File was modified, so the system needs to delete the old version
 		if(oldFileID != null && !oldFileID.equals(this.fileID)) {
@@ -75,8 +75,8 @@ public class Backup implements Runnable {
 		Date date = new Date();
 		System.out.println("Vou comecar o backup: " + dateFormat.format(date));		
 		
-		this.peer.getFilesIdentifiers().put(this.fileName, this.fileID);
-		this.peer.getBackupState().put(this.fileID, false);
+		this.peer.getMetadataManager().getFilesIdentifiers().put(this.fileName, this.fileID);
+		this.peer.getMetadataManager().getBackupState().put(this.fileID, false);
 		
 		File file = new File(this.filePath);
 		
@@ -96,7 +96,7 @@ public class Backup implements Runnable {
 				Future<Boolean> result = scheduledPool.submit(new FileChunk(this.fileID, chunkNr, content, this.replicationDegree, this.peer));
 				threadResults.add(result);
 
-				this.peer.getDesiredReplicationDegrees().put(chunkNr + "_" + this.fileID, this.replicationDegree);
+				this.peer.getMetadataManager().getDesiredReplicationDegrees().put(chunkNr + "_" + this.fileID, this.replicationDegree);
 				chunkNr++;
 			}
 			
@@ -106,7 +106,7 @@ public class Backup implements Runnable {
 				
 				Future<Boolean> result = scheduledPool.submit(new FileChunk(this.fileID, chunkNr, empty, this.replicationDegree, this.peer));
 				threadResults.add(result);
-				this.peer.getDesiredReplicationDegrees().put(chunkNr + "_" + this.fileID, this.replicationDegree);
+				this.peer.getMetadataManager().getDesiredReplicationDegrees().put(chunkNr + "_" + this.fileID, this.replicationDegree);
 				chunkNr++;
 			}
 		}
@@ -116,14 +116,13 @@ public class Backup implements Runnable {
 		if(backupDone) {
 			Date date2 = new Date();
 			System.out.println("Backup completed. " + dateFormat.format(date2));
-			this.peer.getBackupState().replace(fileID, true);
+			this.peer.getMetadataManager().getBackupState().replace(fileID, true);
 		} else {
 			Date date2 = new Date();
 			System.out.println("Backup was not completed. " + dateFormat.format(date2));
 		}
 		
-		this.peer.getChunkInfo().saveChunksInfoFile();
-		this.peer.getFileInfo().saveFilesInfoFile();
+		this.peer.getMetadataManager().saveMetadata();
 	}
 
 	//Method that waits for chunk threads to finish

@@ -18,7 +18,7 @@ public class Client {
 		operation = "BACKUP";
 		operands = new ArrayList<String>();
 		operands.add("05remoting.pdf");
-		operands.add("1");
+		operands.add("2");
 		
 		/*if(!initArgs(args))
 			return;*/

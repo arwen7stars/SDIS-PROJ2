@@ -18,7 +18,7 @@ public class Reclaim implements Runnable {
 	public Reclaim(long kbytes, Peer peer) {
 		this.spaceReclaim = kbytes * 1000;
 		this.peer = peer;
-		this.diskUsed = peer.getDiskUsed();
+		this.diskUsed = peer.getMetadataManager().getDiskUsed();
 		this.chunksPath = Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + this.peer.getServerID() + "/" + Peer.CHUNKS_FOLDER;
 		this.chunksDeleted = new ArrayList<String>();
 	}
@@ -28,7 +28,7 @@ public class Reclaim implements Runnable {
 		getChunksToRemove();
 		sendRemoveMessages();
 		
-		System.out.println("Reclaim finished. Disk usage updated to: " +this.peer.getDiskUsed());
+		System.out.println("Reclaim finished. Disk usage updated to: " +this.peer.getMetadataManager().getDiskUsed());
 	}
 
 	private void getChunksToRemove() {
@@ -48,18 +48,17 @@ public class Reclaim implements Runnable {
 			//Update run-time memory
 			String chunkName = chunkToDelete.getName();
 			chunksDeleted.add(chunkName);
-			this.peer.getChunkInfo().removeChunkInfo(chunkName, this.peer.getServerID());
-			this.peer.getChunksStoredSize().remove(chunkName);
+			this.peer.getMetadataManager().removeChunkInfo(chunkName, this.peer.getServerID());
+			this.peer.getMetadataManager().getChunksStoredSize().remove(chunkName);
 			this.diskUsed = this.diskUsed - chunkToDelete.length();	
 			
 			//Delete file from disk
 			chunkToDelete.delete();		
 		}
 		
-		this.peer.setDiskUsed(this.diskUsed);
-		this.peer.setDiskMaxSpace(this.spaceReclaim);
-		this.peer.getChunkInfo().saveChunksInfoFile();
-		this.peer.getFileInfo().saveFilesInfoFile();
+		this.peer.getMetadataManager().setDiskUsed(this.diskUsed);
+		this.peer.getMetadataManager().setDiskMaxSpace(this.spaceReclaim);
+		this.peer.getMetadataManager().saveMetadata();
 	}
 	
 	private void sendRemoveMessages() {

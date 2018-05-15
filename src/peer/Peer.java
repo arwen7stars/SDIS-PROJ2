@@ -13,12 +13,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 
-import filemanager.InfoChunk;
-import filemanager.InfoFile;
-import protocols.Backup;
-import protocols.Reclaim;
-import protocols.Restore;
-import protocols.State;
+import filemanager.MetadataManager;
+import protocols.*;
 
 public class Peer implements IRMI {	
 	public class PeerEndpoint {
@@ -42,6 +38,7 @@ public class Peer implements IRMI {
 	public static final String CHUNKS_FOLDER = "Chunks";
 	public static final String CHUNKS_INFO = "chunks_info.txt";
 	public static final String FILES_INFO = "files_info.txt";
+	public static final String METADATA_FILE = "metadata.txt";
 	
 	// Network configurations
 	private SSLSocket socket;
@@ -62,43 +59,8 @@ public class Peer implements IRMI {
 	};
 
 	// Data structures
-	private InfoFile fileInfo;
-	private InfoChunk chunkInfo;
+	private MetadataManager dataManager;
 	
-	/**
-	 * Maps all the fileIDs with the respective filename for each file whose backup
-	 * it has initiated - <FileName><FileID>
-	 */
-	private ConcurrentHashMap<String, String> filesIdentifiers;
-
-	/**
-	 * Stores the backup state for each file whose backup it has initiated -
-	 * <FileID><true>
-	 */
-	private ConcurrentHashMap<String, Boolean> backupState;
-
-	/**
-	 * Stores the size file for each chunk - <ChunkNr_FileID><FileSize>
-	 */
-	private ConcurrentHashMap<String, Integer> chunksStoredSize;
-
-	/**
-	 * Stores the actual replication degree of each chunk file -
-	 * <ChunkNr_FileID><Replication Degree>
-	 */
-	private ConcurrentHashMap<String, Integer> actualReplicationDegrees;
-
-	/**
-	 * Stores the replication degree of each chunk file -
-	 * <ChunkNr_FileID><Replication Degree>
-	 */
-	private ConcurrentHashMap<String, Integer> desiredReplicationDegrees;
-
-	/**
-	 * Stores who has stored the chunk - <ChunkNr_FileID><List of Peer IDs>
-	 */
-	private ConcurrentHashMap<String, CopyOnWriteArrayList<Integer>> chunksHosts;
-
 	/**
 	 * Stores the restored chunks received - <ChunkNr_FileID><File Bytes>
 	 */
@@ -118,16 +80,6 @@ public class Peer implements IRMI {
 	 * Stores the messages chunks that has received - <ChunkNr_FileID>
 	 */
 	private CopyOnWriteArrayList<String> receivedPutChunkMessages;
-
-	/**
-	 * Disk space to store chunks
-	 */
-	private long diskMaxSpace;
-
-	/**
-	 * Disk space used to store chunks
-	 */
-	private long diskUsed;
 	
 	public Peer(String protocol, int id) throws IOException {
 		this.protocolVersion = protocol;
@@ -144,15 +96,7 @@ public class Peer implements IRMI {
 		makeDirectory(chunksFiles);
 		makeDirectory(sharedFolder);
 		
-		this.fileInfo = new InfoFile(this);
-		this.chunkInfo = new InfoChunk(this);
-
-		if (!fileInfo.loadFilesInfo()) {
-			initializeFilesAttributes();
-		}
-		if (!chunkInfo.loadChunksInfo()) {
-			initializeChunksAttributes();
-		}
+		this.dataManager = new MetadataManager(this);
 
 		this.receivedChunkMessages = new CopyOnWriteArrayList<String>();
 		this.receivedPutChunkMessages = new CopyOnWriteArrayList<String>();
@@ -212,7 +156,7 @@ public class Peer implements IRMI {
 
 	// Send delete message to MC channel
 	public void sendDeleteRequest(String fileName) {
-		String fileID = this.filesIdentifiers.get(fileName);
+		String fileID = this.getMetadataManager().getFilesIdentifiers().get(fileName);
 
 		if (fileID != null) {
 			String message = "DELETE " + this.protocolVersion + " " + this.serverID + " " + fileID + " ";
@@ -224,10 +168,9 @@ public class Peer implements IRMI {
 				System.out.println("Error sending delete message to multicast.");
 			}
 
-			this.backupState.replace(fileID, false);
-			this.fileInfo.removeFileInfo(fileID);
-			this.chunkInfo.saveChunksInfoFile();
-			this.fileInfo.saveFilesInfoFile();
+			this.getMetadataManager().getBackupState().replace(fileID, false);
+			this.getMetadataManager().removeFileInfo(fileID);
+			this.getMetadataManager().saveMetadata();
 			System.out.println("Delete finished.");
 		} else {
 			System.out.println("Error deleting the file, because it wasn't backed up by me.");
@@ -240,20 +183,6 @@ public class Peer implements IRMI {
 		if (file.mkdirs()) {
 			System.out.println("Folder " + path + " created.");
 		}
-	}
-
-	private void initializeFilesAttributes() {
-		this.filesIdentifiers = new ConcurrentHashMap<String, String>();
-		this.backupState = new ConcurrentHashMap<String, Boolean>();
-		this.diskMaxSpace = 10000000; // 10 Mbs
-		this.diskUsed = 0;
-	}
-
-	private void initializeChunksAttributes() {
-		this.actualReplicationDegrees = new ConcurrentHashMap<String, Integer>();
-		this.desiredReplicationDegrees = new ConcurrentHashMap<String, Integer>();
-		this.chunksHosts = new ConcurrentHashMap<String, CopyOnWriteArrayList<Integer>>();
-		this.chunksStoredSize = new ConcurrentHashMap<String, Integer>();
 	}
 
 	public void sendReplyToPeers(channelType type, byte[] packet) throws IOException {
@@ -296,6 +225,8 @@ public class Peer implements IRMI {
 		peer.portMC = portMC;
 		peer.portMDB = portMDB;
 		peer.portMDR = portMDR;
+		
+		System.out.println("Host: "+host);
 		
 		endpoints.add(peer);
 	}
@@ -347,109 +278,25 @@ public class Peer implements IRMI {
 	public PeerChannel getMdrChannel() {
 		return mdrChannel;
 	}
-
-	public InfoFile getFileInfo() {
-		return fileInfo;
-	}
-
-	public InfoChunk getChunkInfo() {
-		return chunkInfo;
-	}
-
-	public ConcurrentHashMap<String, String> getFilesIdentifiers() {
-		return filesIdentifiers;
-	}
-
-	public void setFilesIdentifiers(ConcurrentHashMap<String, String> filesIdentifiers) {
-		this.filesIdentifiers = filesIdentifiers;
-	}
-
-	public ConcurrentHashMap<String, Boolean> getBackupState() {
-		return backupState;
-	}
-
-	public void setBackupState(ConcurrentHashMap<String, Boolean> backupState) {
-		this.backupState = backupState;
-	}
-
-	public ConcurrentHashMap<String, Integer> getChunksStoredSize() {
-		return chunksStoredSize;
-	}
-
-	public void setChunksStoredSize(ConcurrentHashMap<String, Integer> chunksStoredSize) {
-		this.chunksStoredSize = chunksStoredSize;
-	}
-
-	public ConcurrentHashMap<String, Integer> getActualReplicationDegrees() {
-		return actualReplicationDegrees;
-	}
-
-	public void setActualReplicationDegrees(ConcurrentHashMap<String, Integer> actualReplicationDegrees) {
-		this.actualReplicationDegrees = actualReplicationDegrees;
-	}
-
-	public ConcurrentHashMap<String, Integer> getDesiredReplicationDegrees() {
-		return desiredReplicationDegrees;
-	}
-
-	public void setDesiredReplicationDegrees(ConcurrentHashMap<String, Integer> desiredReplicationDegrees) {
-		this.desiredReplicationDegrees = desiredReplicationDegrees;
-	}
-
-	public ConcurrentHashMap<String, CopyOnWriteArrayList<Integer>> getChunksHosts() {
-		return chunksHosts;
-	}
-
-	public void setChunksHosts(ConcurrentHashMap<String, CopyOnWriteArrayList<Integer>> chunksHosts) {
-		this.chunksHosts = chunksHosts;
+	
+	public MetadataManager getMetadataManager() {
+		return dataManager;
 	}
 
 	public ConcurrentHashMap<String, byte[]> getRestoredChunks() {
 		return restoredChunks;
 	}
 
-	public void setRestoredChunks(ConcurrentHashMap<String, byte[]> restoredChunks) {
-		this.restoredChunks = restoredChunks;
-	}
-
 	public CopyOnWriteArrayList<String> getWaitRestoredChunks() {
 		return waitRestoredChunks;
-	}
-
-	public void setWaitRestoredChunks(CopyOnWriteArrayList<String> waitRestoredChunks) {
-		this.waitRestoredChunks = waitRestoredChunks;
 	}
 
 	public CopyOnWriteArrayList<String> getReceivedChunkMessages() {
 		return receivedChunkMessages;
 	}
 
-	public void setReceivedChunkMessages(CopyOnWriteArrayList<String> receivedChunkMessages) {
-		this.receivedChunkMessages = receivedChunkMessages;
-	}
-
 	public CopyOnWriteArrayList<String> getReceivedPutChunkMessages() {
 		return receivedPutChunkMessages;
-	}
-
-	public void setReceivedPutChunkMessages(CopyOnWriteArrayList<String> receivedPutChunkMessages) {
-		this.receivedPutChunkMessages = receivedPutChunkMessages;
-	}
-
-	public long getDiskMaxSpace() {
-		return diskMaxSpace;
-	}
-
-	public void setDiskMaxSpace(long diskMaxSpace) {
-		this.diskMaxSpace = diskMaxSpace;
-	}
-
-	public long getDiskUsed() {
-		return diskUsed;
-	}
-
-	public void setDiskUsed(long diskUsed) {
-		this.diskUsed = diskUsed;
 	}
 
 	@Override
@@ -484,7 +331,7 @@ public class Peer implements IRMI {
 	@Override
 	public void reclaim(int kbytes) throws RemoteException {
 		System.out.println("[SERVER " + this.serverID + "] Starting reclaim protocol...");
-		System.out.println("Disk used: " + this.diskUsed);
+		System.out.println("Disk used: " + this.getMetadataManager().getDiskUsed());
 		new Thread(new Reclaim(kbytes, this)).start();
 	}
 

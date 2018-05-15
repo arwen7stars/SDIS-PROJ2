@@ -89,21 +89,21 @@ public class EventHandler implements Runnable {
 			}
 			
 			// Peer initiator of backup don't store any chunk of the file
-			if(this.peer.getBackupState().get(header[3]) != null) {
+			if(this.peer.getMetadataManager().getBackupState().get(header[3]) != null) {
 				return;
 			}
 			
-			this.peer.getDesiredReplicationDegrees().put(hashmapKey, Integer.parseInt(header[5]));
+			this.peer.getMetadataManager().getDesiredReplicationDegrees().put(hashmapKey, Integer.parseInt(header[5]));
 
 			// Check if I already stored this chunk
-			CopyOnWriteArrayList<Integer> chunkHosts = peer.getChunksHosts().get(hashmapKey);
+			CopyOnWriteArrayList<Integer> chunkHosts = peer.getMetadataManager().getChunksHosts().get(hashmapKey);
 
 			if (chunkHosts != null && chunkHosts.contains(this.peer.getServerID())) {
 				return;
 			}
 
 			// Check if I have disk space to store the chunk
-			if (this.body.length + this.peer.getDiskUsed() > this.peer.getDiskMaxSpace()) {
+			if (this.body.length + this.peer.getMetadataManager().getDiskUsed() > this.peer.getMetadataManager().getDiskMaxSpace()) {
 				return;
 			}
 
@@ -123,9 +123,9 @@ public class EventHandler implements Runnable {
 			}
 
 			// Save chunks information
-			this.peer.getChunkInfo().storeChunkInfo(Integer.parseInt(this.header[2]), this.header[3],
+			this.peer.getMetadataManager().storeChunkInfo(Integer.parseInt(this.header[2]), this.header[3],
 					Integer.parseInt(this.header[4]));
-			this.peer.getChunkInfo().saveChunksInfoFile();
+			this.peer.getMetadataManager().saveMetadata();
 
 			break;
 
@@ -138,8 +138,8 @@ public class EventHandler implements Runnable {
 			hashmapKey = header[4] + "_" + header[3];
 
 			//Ignore If I don't have the chunk stored
-			if (this.peer.getChunksHosts().get(hashmapKey) != null
-					&& !this.peer.getChunksHosts().get(hashmapKey).contains(this.peer.getServerID())) {
+			if (this.peer.getMetadataManager().getChunksHosts().get(hashmapKey) != null
+					&& !this.peer.getMetadataManager().getChunksHosts().get(hashmapKey).contains(this.peer.getServerID())) {
 				return;
 			}
 
@@ -211,13 +211,13 @@ public class EventHandler implements Runnable {
 			}
 			
 			//Update memory chunks info
-			this.peer.getChunkInfo().removeChunkInfo(hashmapKey, Integer.parseInt(header[2]));
-			this.peer.getChunkInfo().saveChunksInfoFile();
+			this.peer.getMetadataManager().removeChunkInfo(hashmapKey, Integer.parseInt(header[2]));
+			this.peer.getMetadataManager().saveMetadata();
 
 			// Check if I have stored this chunk, to see the perceived replication degree
-			if (this.peer.getChunksStoredSize().get(hashmapKey) != null) {
-				int actualReplicationDegree = this.peer.getActualReplicationDegrees().get(hashmapKey);
-				int desiredReplicationDegree = this.peer.getDesiredReplicationDegrees().get(hashmapKey);
+			if (this.peer.getMetadataManager().getChunksStoredSize().get(hashmapKey) != null) {
+				int actualReplicationDegree = this.peer.getMetadataManager().getActualReplicationDegrees().get(hashmapKey);
+				int desiredReplicationDegree = this.peer.getMetadataManager().getDesiredReplicationDegrees().get(hashmapKey);
 
 				if (actualReplicationDegree < desiredReplicationDegree) {
 					reBackupFile(hashmapKey, desiredReplicationDegree);
@@ -313,15 +313,14 @@ public class EventHandler implements Runnable {
 		}
 
 		// Save chunks information
-		this.peer.getChunksStoredSize().put(this.header[4] + "_" + this.header[3], this.body.length);
-		this.peer.getChunkInfo().storeChunkInfo(this.peer.getServerID(), this.header[3], Integer.parseInt(this.header[4]));
+		this.peer.getMetadataManager().getChunksStoredSize().put(this.header[4] + "_" + this.header[3], this.body.length);
+		this.peer.getMetadataManager().storeChunkInfo(this.peer.getServerID(), this.header[3], Integer.parseInt(this.header[4]));
 		
 		// Update disk usage
-		this.peer.setDiskUsed(this.peer.getDiskUsed() + this.body.length);
+		this.peer.getMetadataManager().setDiskUsed(this.peer.getMetadataManager().getDiskUsed() + this.body.length);
 		
 		//Save non volatile memory
-		this.peer.getChunkInfo().saveChunksInfoFile();
-		this.peer.getFileInfo().saveFilesInfoFile();
+		this.peer.getMetadataManager().saveMetadata();
 
 		// Send message STORED
 		byte[] packet = makeStoreChunkReply(this.header[3], this.header[4]);

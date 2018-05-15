@@ -25,8 +25,7 @@ public class Delete implements Runnable {
 			deleteChunks(chunks);
 		}
 		
-		this.peer.getChunkInfo().saveChunksInfoFile();
-		this.peer.getFileInfo().saveFilesInfoFile();
+		this.peer.getMetadataManager().saveMetadata();
 	}
 
 	private void deleteChunks(File[] chunks) {
@@ -36,10 +35,10 @@ public class Delete implements Runnable {
 				Files.delete(file.toPath());
 				
 				//Update memory info
-				this.peer.getChunkInfo().removeChunkInfo(filename, this.peer.getServerID());
-				int size = this.peer.getChunksStoredSize().get(filename);
-				this.peer.getChunksStoredSize().remove(filename);
-				this.peer.setDiskUsed(this.peer.getDiskUsed() - size);
+				this.peer.getMetadataManager().removeChunkInfo(filename, this.peer.getServerID());
+				int size = this.peer.getMetadataManager().getChunksStoredSize().get(filename);
+				this.peer.getMetadataManager().getChunksStoredSize().remove(filename);
+				this.peer.getMetadataManager().setDiskUsed(this.peer.getMetadataManager().getDiskUsed() - size);
 			} catch (IOException e) {
 				System.out.println("Error deleting chunk file.");
 			}
