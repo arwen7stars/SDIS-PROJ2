@@ -4,11 +4,12 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.concurrent.ExecutionException;
 import java.io.IOException;
 
 public class RunPeer {
 	
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws IOException, InterruptedException, ExecutionException {
 		if(args.length != 1){
 			System.out.println("Wrong number of args.");
 			System.exit(1);

@@ -1,20 +1,23 @@
 package filemanager;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import peer.Peer;
 
-public class MetadataManager {
+public class MetadataManager implements Serializable {
 	
-	private Peer peer;
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+	
+	private int peerID;
 	
 	/**
 	 * Maps all the fileIDs with the respective filename for each file whose backup
@@ -60,43 +63,8 @@ public class MetadataManager {
 	 */
 	private long diskUsed;
 	
-	public MetadataManager(Peer peer) {
-		this.peer = peer;
-		loadMetadata();
-	}
-	
-	// Method to load the non volatile memory about the backup files
-	@SuppressWarnings("unchecked")
-	public synchronized void loadMetadata() {
-		File file = new File(Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + this.peer.getServerID() + "/" + Peer.METADATA_FILE);
-		
-		if (file.exists()) {
-			try {
-				ObjectInputStream serverStream = new ObjectInputStream(new FileInputStream(
-						Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + this.peer.getServerID() + "/" + Peer.METADATA_FILE));
-				
-				//Files Info
-				this.filesIdentifiers = (ConcurrentHashMap<String, String>) serverStream.readObject();
-				this.backupState = (ConcurrentHashMap<String, Boolean>) serverStream.readObject();
-				this.diskMaxSpace = (long) serverStream.readObject();
-				this.diskUsed = (long) serverStream.readObject();
-				
-				//Chunks Info
-				this.actualReplicationDegrees = (ConcurrentHashMap<String, Integer>) serverStream.readObject();
-				this.desiredReplicationDegrees = (ConcurrentHashMap<String, Integer>) serverStream.readObject();
-				this.chunksHosts = (ConcurrentHashMap<String, CopyOnWriteArrayList<Integer>>) serverStream.readObject();
-				this.chunksStoredSize = (ConcurrentHashMap<String, Integer>) serverStream.readObject();
-
-				serverStream.close();
-			} catch (IOException | ClassNotFoundException e) {
-				System.err.println("Error loading the metadata file on Peer.");				
-			}
-		} else {
-			initializeAttributes();
-		}
-	}
-	
-	private void initializeAttributes() {
+	public MetadataManager(int peerID) {
+		this.peerID = peerID;
 		this.filesIdentifiers = new ConcurrentHashMap<String, String>();
 		this.backupState = new ConcurrentHashMap<String, Boolean>();
 		this.diskMaxSpace = 10000000; // 10 Mbs
@@ -111,19 +79,9 @@ public class MetadataManager {
 	public synchronized void saveMetadata() {
 		try {
 			ObjectOutputStream serverStream = new ObjectOutputStream(new FileOutputStream(
-					Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + peer.getServerID() + "/" + Peer.METADATA_FILE));
+					Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + this.peerID + "/" + Peer.METADATA_FILE));
 			
-			//Files Info
-			serverStream.writeObject(this.filesIdentifiers);
-			serverStream.writeObject(this.backupState);
-			serverStream.writeObject(this.diskMaxSpace);
-			serverStream.writeObject(this.diskUsed);
-			
-			//Chunks Info
-			serverStream.writeObject(this.actualReplicationDegrees);
-			serverStream.writeObject(this.desiredReplicationDegrees);
-			serverStream.writeObject(this.chunksHosts);
-			serverStream.writeObject(this.chunksStoredSize);
+			serverStream.writeObject(this);			
 			
 			serverStream.close();
 		} catch (IOException e) {

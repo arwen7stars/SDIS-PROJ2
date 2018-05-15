@@ -1,14 +1,22 @@
 package peer;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
@@ -27,6 +35,7 @@ public class Peer implements IRMI {
 	
 	private volatile ArrayList<PeerEndpoint> endpoints;
 	private volatile boolean collectedAllPeers;
+	private volatile int metadataServer; //0 waiting for answer, 1 exists, 2 don't exist
 	
 	// Global configurations
 	public static final String PEERS_FOLDER = "Peers";
@@ -36,7 +45,7 @@ public class Peer implements IRMI {
 	public static final String SHARED_FOLDER = "Shared";
 	public static final String FILES_FOLDER = "Files";
 	public static final String CHUNKS_FOLDER = "Chunks";
-	public static final String METADATA_FILE = "metadata.txt";
+	public static final String METADATA_FILE = "metadata.ser";
 	
 	// Network configurations
 	private SSLSocket socket;
@@ -79,7 +88,7 @@ public class Peer implements IRMI {
 	 */
 	private CopyOnWriteArrayList<String> receivedPutChunkMessages;
 	
-	public Peer(String protocol, int id) throws IOException {
+	public Peer(String protocol, int id) throws IOException, InterruptedException, ExecutionException {
 		this.protocolVersion = protocol;
 		this.serverID = id;
 
@@ -93,8 +102,6 @@ public class Peer implements IRMI {
 		makeDirectory(backupFiles);
 		makeDirectory(chunksFiles);
 		makeDirectory(sharedFolder);
-		
-		this.dataManager = new MetadataManager(this);
 
 		this.receivedChunkMessages = new CopyOnWriteArrayList<String>();
 		this.receivedPutChunkMessages = new CopyOnWriteArrayList<String>();
@@ -114,7 +121,54 @@ public class Peer implements IRMI {
 
 		// allows to send messages to other peers (including to master peer)
 		this.senderSocket = new DatagramSocket();
+		
+		// Get Metadata from Server or Peer Disk
+		getMetadata();
 	}
+	
+	public void getMetadata() throws InterruptedException, ExecutionException {
+		File file = new File(Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + this.serverID + "/" + Peer.METADATA_FILE);
+		
+		if (file.exists()) {
+			try {
+				ObjectInputStream serverStream = new ObjectInputStream(new FileInputStream(
+						Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + this.serverID + "/" + Peer.METADATA_FILE));
+				dataManager = (MetadataManager) serverStream.readObject();
+				
+				serverStream.close();
+			} catch (IOException | ClassNotFoundException e) {
+				System.err.println("Error loading the metadata file on Peer.");				
+			}
+		} else {
+			// Ask metadata to the Server
+			metadataServer = 0;
+			serverChannel.sendMessage("GET_METADATA");
+			
+			// Schedule task to check response from server
+			ScheduledExecutorService scheduledPool = Executors.newScheduledThreadPool(1);
+			Future<Integer> future = scheduledPool.schedule(getMetadataResponse, 1, TimeUnit.SECONDS);
+			future.get();
+			
+			if(metadataServer == 1) {
+				try {
+					ObjectInputStream serverStream = new ObjectInputStream(new FileInputStream(
+							Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + this.serverID + "/" + Peer.METADATA_FILE));
+					dataManager = (MetadataManager) serverStream.readObject();
+					
+					serverStream.close();
+				} catch (IOException | ClassNotFoundException e) {
+					System.err.println("Error loading the metadata file on Peer.");				
+				}
+			} else {
+				// Create MetadataManager empty
+				dataManager = new MetadataManager(this.serverID);
+			}
+		}
+	}
+	
+	Callable<Integer> getMetadataResponse = () -> {
+		return this.metadataServer;
+	};
 
 	public void connectToMasterServer() {
 		// Set client key and truststore
@@ -243,6 +297,10 @@ public class Peer implements IRMI {
 
 	public void setCollectedAllPeers(boolean collectedAllPeers) {
 		this.collectedAllPeers = collectedAllPeers;
+	}
+	
+	public void setMetadataResponse(int response) {
+		this.metadataServer = response;
 	}
 
 	public SSLSocket getSocket() {
