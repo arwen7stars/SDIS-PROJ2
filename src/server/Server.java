@@ -1,6 +1,9 @@
 package server;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 
 import javax.net.ssl.SSLServerSocket;
@@ -59,21 +62,25 @@ public class Server {
 	}
 	
 	public static String getPeers() {
-		//TO DO - Destroir sockets que estão mortos (de peers que se desligaram)
-		
+				
 		String s = "";
-		
+	
 		for(ServerPeerListener peer : peers)
 		{
 			SSLSocket socket = peer.getSocket();
 			
-			s += "PEER ";
-			s += socket.getInetAddress().getHostAddress() + " ";
-			s += peer.getServerID() + " ";
-			s += peer.getMCPort() + " ";
-			s += peer.getMDBPort() + " ";
-			s += peer.getMDBPort() + " ";
-			s += "\n";
+			if( !socket.isConnected() || socket.isClosed() || socket.isOutputShutdown() || socket.isInputShutdown() )
+				Server.removePeerListener(peer);
+
+			else{
+				s += "PEER ";
+				s += socket.getInetAddress().getHostAddress() + " ";
+				s += peer.getServerID() + " ";
+				s += peer.getMCPort() + " ";
+				s += peer.getMDBPort() + " ";
+				s += peer.getMDBPort() + " ";
+				s += "\n";
+			}
 		}
 		s += "DONE";
 		return s;
