@@ -12,13 +12,13 @@ import javax.net.ssl.SSLSocket;
 
 import server.Server;
 
-public class ClientChannel implements Runnable {
+public class PeerServerListener implements Runnable {
 	private Peer peer;
 	private SSLSocket socket;
 	PrintWriter out;
 	BufferedReader in;
 	
-	public ClientChannel(Peer peer, SSLSocket socket) {
+	public PeerServerListener(Peer peer, SSLSocket socket) {
 		this.peer = peer;
 		this.socket = socket;
 		try {
@@ -32,8 +32,10 @@ public class ClientChannel implements Runnable {
 	@Override
 	public void run() {		
 		//Scanner scanner = new Scanner(System.in);
+		
+		boolean alive = true;
 
-		while(true) {			
+		while(alive) {			
 			/*System.out.print("Enter something: ");
 			String input = scanner.nextLine();
             out.println(input);
@@ -52,7 +54,8 @@ public class ClientChannel implements Runnable {
 
 				msg = in.readLine();
 			} catch (IOException e) {
-				e.printStackTrace();
+				System.out.println("Lost connection to Server");
+				alive = false;
 			}
 			
 			if(msg != null) {
@@ -80,7 +83,9 @@ public class ClientChannel implements Runnable {
 				}
 			}
 			
-		}      
+		}  
+		
+		peer.connectToMasterServer();
 	}
 	
 	public void sendMessage(String message)

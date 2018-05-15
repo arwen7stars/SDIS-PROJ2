@@ -4,11 +4,11 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
 
-public class ChannelListener implements Runnable {
+public class PeerChannel implements Runnable {
 	private Peer peer;
 	private DatagramSocket socket;
 	
-	public ChannelListener(Peer peer) throws IOException {
+	public PeerChannel(Peer peer) throws IOException {
 		this.peer = peer;
 		
 		try {

@@ -46,16 +46,16 @@ public class Peer implements IRMI {
 	// Network configurations
 	private SSLSocket socket;
 	private DatagramSocket senderSocket;
-	private ClientChannel clientChannel;
+	private PeerServerListener serverChannel;
 
 	// Peer configurations
 	private String protocolVersion;
 	private int serverID;
 
 	// Multicast configurations
-	private ChannelListener mcChannel;
-	private ChannelListener mdbChannel;
-	private ChannelListener mdrChannel;
+	private PeerChannel mcChannel;
+	private PeerChannel mdbChannel;
+	private PeerChannel mdrChannel;
 
 	public static enum channelType {
 		MC, MDB, MDR
@@ -159,9 +159,9 @@ public class Peer implements IRMI {
 		this.restoredChunks = new ConcurrentHashMap<String, byte[]>();
 		this.waitRestoredChunks = new CopyOnWriteArrayList<String>();
 			
-		mcChannel = new ChannelListener(this);
-		mdbChannel = new ChannelListener(this);
-		mdrChannel = new ChannelListener(this);
+		mcChannel = new PeerChannel(this);
+		mdbChannel = new PeerChannel(this);
+		mdrChannel = new PeerChannel(this);
 		
 		connectToMasterServer();
 		
@@ -172,18 +172,9 @@ public class Peer implements IRMI {
 
 		// allows to send messages to other peers (including to master peer)
 		this.senderSocket = new DatagramSocket();
-		
-		String msg = "REGISTER ";
-
-		msg += serverID + " ";
-		msg += mcChannel.getPort() + " ";
-		msg += mdbChannel.getPort() + " ";
-		msg += mdrChannel.getPort();
-		
-		clientChannel.sendMessage(msg);
 	}
 
-	private void connectToMasterServer() {
+	public void connectToMasterServer() {
 		// Set client key and truststore
 		//System.setProperty("javax.net.ssl.trustStore", "../SSL/truststore"); UBUNTU
 		System.setProperty("javax.net.ssl.trustStore", "SSL/truststore");
@@ -202,8 +193,21 @@ public class Peer implements IRMI {
 		}
 		
 		// allows to receive messages from master peer
-		this.clientChannel = new ClientChannel(this, socket);
-		new Thread(clientChannel).start();
+		this.serverChannel = new PeerServerListener(this, socket);
+		new Thread(serverChannel).start();
+		
+		notifyAuthenticationToServer();
+	}
+	
+	private void notifyAuthenticationToServer() {
+		String msg = "REGISTER ";
+
+		msg += serverID + " ";
+		msg += mcChannel.getPort() + " ";
+		msg += mdbChannel.getPort() + " ";
+		msg += mdrChannel.getPort();
+		
+		serverChannel.sendMessage(msg);
 	}
 
 	// Send delete message to MC channel
@@ -257,7 +261,7 @@ public class Peer implements IRMI {
 		this.endpoints = new ArrayList<PeerEndpoint>();
 		
 		System.out.println("Vou pedir os Peers existentes");
-		this.clientChannel.sendMessage("GETPEERS");
+		this.serverChannel.sendMessage("GETPEERS");
 		
 		while(!this.collectedAllPeers) {}
 		
@@ -320,8 +324,8 @@ public class Peer implements IRMI {
 		return senderSocket;
 	}
 
-	public ClientChannel getClientChannel() {
-		return clientChannel;
+	public PeerServerListener getServerChannel() {
+		return serverChannel;
 	}
 
 	public String getProtocolVersion() {
@@ -332,15 +336,15 @@ public class Peer implements IRMI {
 		return serverID;
 	}
 
-	public ChannelListener getMcChannel() {
+	public PeerChannel getMcChannel() {
 		return mcChannel;
 	}
 
-	public ChannelListener getMdbChannel() {
+	public PeerChannel getMdbChannel() {
 		return mdbChannel;
 	}
 
-	public ChannelListener getMdrChannel() {
+	public PeerChannel getMdrChannel() {
 		return mdrChannel;
 	}
 
