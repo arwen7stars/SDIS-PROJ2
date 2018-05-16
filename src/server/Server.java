@@ -2,6 +2,8 @@ package server;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 
 import javax.net.ssl.SSLServerSocket;
@@ -72,10 +74,9 @@ public class Server {
 	}
 	
 	public static String getPeers() {
-		//TO DO - Destroir sockets que estão mortos (de peers que se desligaram)
-		
+				
 		String s = "";
-		
+	
 		for(ServerPeerListener peer : peers)
 		{
 			SSLSocket socket = peer.getSocket();
