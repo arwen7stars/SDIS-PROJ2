@@ -74,20 +74,24 @@ public class Server {
 	}
 	
 	public static String getPeers() {
-				
 		String s = "";
-	
+		
 		for(ServerPeerListener peer : peers)
 		{
 			SSLSocket socket = peer.getSocket();
 			
-			s += "PEER ";
-			s += socket.getInetAddress().getHostAddress() + " ";
-			s += peer.getPeerID() + " ";
-			s += peer.getMCPort() + " ";
-			s += peer.getMDBPort() + " ";
-			s += peer.getMDBPort() + " ";
-			s += "\n";
+			if( !socket.isConnected() || socket.isClosed() || socket.isOutputShutdown() || socket.isInputShutdown() )
+				Server.removePeerListener(peer);
+
+			else{
+				s += "PEER ";
+				s += socket.getInetAddress().getHostAddress() + " ";
+				s += peer.getPeerID() + " ";
+				s += peer.getMCPort() + " ";
+				s += peer.getMDBPort() + " ";
+				s += peer.getMDBPort() + " ";
+				s += "\n";
+			}
 		}
 		s += "DONE";
 		return s;
