@@ -52,8 +52,7 @@ local.properties
 .cache-main
 .scala_dependencies
 .worksheet
-Peers/DiskPeer1/
 
-Peers/DiskPeer2/
-
-Peers/DiskPeer3/
+# Ignore files from Peers and Master
+Peers/*
+Master/*

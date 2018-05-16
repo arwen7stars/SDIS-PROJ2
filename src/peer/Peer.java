@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 
-import filemanager.MetadataManager;
+import filemanager.*;
 import protocols.*;
 
 public class Peer implements IRMI {	
@@ -35,12 +35,11 @@ public class Peer implements IRMI {
 	
 	private volatile ArrayList<PeerEndpoint> endpoints;
 	private volatile boolean collectedAllPeers;
-	private volatile int metadataServer; //0 waiting for answer, 1 exists, 2 don't exist
+	private volatile int metadataServer; //-1 waiting for answer, 1 exists, 0 don't exist
 	
 	// Global configurations
 	public static final String PEERS_FOLDER = "Peers";
 	public static final String DISK_FOLDER = "DiskPeer";
-	public static final String MASTER_FOLDER = "Master";
 	
 	public static final String SHARED_FOLDER = "Shared";
 	public static final String FILES_FOLDER = "Files";
@@ -122,8 +121,9 @@ public class Peer implements IRMI {
 		// allows to send messages to other peers (including to master peer)
 		this.senderSocket = new DatagramSocket();
 		
-		// Get Metadata from Server or Peer Disk
+		// Manage Metadata
 		getMetadata();
+		new Thread(new BackupMetadata(this)).start();
 	}
 	
 	public void getMetadata() throws InterruptedException, ExecutionException {
@@ -141,15 +141,15 @@ public class Peer implements IRMI {
 			}
 		} else {
 			// Ask metadata to the Server
-			metadataServer = 0;
+			metadataServer = -1;
 			serverChannel.sendMessage("GET_METADATA");
 			
 			// Schedule task to check response from server
 			ScheduledExecutorService scheduledPool = Executors.newScheduledThreadPool(1);
 			Future<Integer> future = scheduledPool.schedule(getMetadataResponse, 1, TimeUnit.SECONDS);
-			future.get();
+			int metadataResponse = future.get();
 			
-			if(metadataServer == 1) {
+			if(metadataResponse == 1) {
 				try {
 					ObjectInputStream serverStream = new ObjectInputStream(new FileInputStream(
 							Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + this.serverID + "/" + Peer.METADATA_FILE));
@@ -229,7 +229,7 @@ public class Peer implements IRMI {
 		}
 	}
 	
-	public static void makeDirectory(String path) {
+	private void makeDirectory(String path) {
 		File file = new File(path);
 
 		if (file.mkdirs()) {
@@ -240,13 +240,10 @@ public class Peer implements IRMI {
 	public void sendReplyToPeers(channelType type, byte[] packet) throws IOException {
 		this.collectedAllPeers = false;
 		this.endpoints = new ArrayList<PeerEndpoint>();
-		
-		System.out.println("Vou pedir os Peers existentes");
+	
 		this.serverChannel.sendMessage("GETPEERS");
 		
 		while(!this.collectedAllPeers) {}
-		
-		System.out.println("Já os tenho");
 		
 		for(PeerEndpoint peer : endpoints) {
 			InetAddress address = InetAddress.getByName(peer.host);
@@ -277,8 +274,6 @@ public class Peer implements IRMI {
 		peer.portMC = portMC;
 		peer.portMDB = portMDB;
 		peer.portMDR = portMDR;
-		
-		System.out.println("Host: "+host);
 		
 		endpoints.add(peer);
 	}

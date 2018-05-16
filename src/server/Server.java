@@ -1,5 +1,6 @@
 package server;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 
@@ -13,13 +14,17 @@ public class Server {
 	private SSLServerSocket socket;
 	private static ArrayList<ServerPeerListener> peers;
 	
+	public static final String MASTER_FOLDER = "Master";
+	public static final String METADATA_FILE = "metadata.ser";
+	public static final String PEER_FOLDER = "DiskPeer";
+	
 	public static void main(String args[]) {
 		peers = new ArrayList<ServerPeerListener>();
 		new Server(5000);
 	}
 	
 	public Server(int port) {
-		Peer.makeDirectory(Peer.MASTER_FOLDER);
+		makeDirectory(Server.MASTER_FOLDER);
 		
 		// Set server key and truststore
 		//System.setProperty("javax.net.ssl.trustStore", "../SSL/truststore"); UBUNTU
@@ -46,6 +51,14 @@ public class Server {
 		System.out.println("Server Socket running!");
 	}
 	
+	private void makeDirectory(String path) {
+		File file = new File(path);
+
+		if (file.mkdirs()) {
+			System.out.println("Folder " + path + " created.");
+		}
+	}
+	
 	public static void addPeerListener(SSLSocket s) {
 		ServerPeerListener peer_channel = new ServerPeerListener(s);
 		new Thread(peer_channel).start();
@@ -69,7 +82,7 @@ public class Server {
 			
 			s += "PEER ";
 			s += socket.getInetAddress().getHostAddress() + " ";
-			s += peer.getServerID() + " ";
+			s += peer.getPeerID() + " ";
 			s += peer.getMCPort() + " ";
 			s += peer.getMDBPort() + " ";
 			s += peer.getMDBPort() + " ";

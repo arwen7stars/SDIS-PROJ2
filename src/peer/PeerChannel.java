@@ -24,7 +24,7 @@ public class PeerChannel implements Runnable {
 			byte[] requestPacket = new byte[64500];
 			DatagramPacket packet = new DatagramPacket(requestPacket, requestPacket.length);
 			
-			System.out.println("Peer socket " + peer.getServerID() + " listening to messages in 'multicast' channel...");
+			//System.out.println("Peer socket " + peer.getServerID() + " listening to messages in 'multicast' channel...");
 
 			try {
 				socket.receive(packet);

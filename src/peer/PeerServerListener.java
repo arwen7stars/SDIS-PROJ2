@@ -49,7 +49,7 @@ public class PeerServerListener implements Runnable {
 			String msg = null;
 			
 			try {
-				System.out.println("Peer socket " + peer.getServerID() + " listening to messages from the server...");
+				//System.out.println("Peer socket " + peer.getServerID() + " listening to messages from the server...");
 
 				msg = in.readLine();
 			} catch (IOException e) {
@@ -134,13 +134,13 @@ public class PeerServerListener implements Runnable {
 	
 	public void sendBytes(byte[] message)
 	{
-		DataOutputStream dOut = null;
-		try {
-			dOut = new DataOutputStream(socket.getOutputStream());
-			dOut.writeInt(message.length); 							// write length of the message
-			dOut.write(message);           							// write the message
-		} catch (IOException e) {
-			e.printStackTrace();
+		try
+		{
+			socket.getOutputStream().write(message, 0, message.length);
+		}
+		catch (IOException e)
+		{
+			System.out.println("Problem sending bytes to server");
 		}
 	}
 }
