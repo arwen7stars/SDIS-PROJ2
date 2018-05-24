@@ -10,6 +10,7 @@ public class ServerChannel implements Runnable {
 	
 	public ServerChannel(SSLServerSocket socket) {
 		this.socket = socket;
+		System.out.println("Server Socket running!");
 	}
 
 	@Override

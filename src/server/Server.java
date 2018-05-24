@@ -2,30 +2,43 @@ package server;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.ArrayList;
 
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSocket;
 
-import peer.Peer;
-
 public class Server {
 	private SSLServerSocket socket;
 	private static ArrayList<ServerPeerListener> peers;
+	private static ArrayList<ServerToServerChannel> otherServers;
 	
 	public static final String MASTER_FOLDER = "Master";
 	public static final String METADATA_FILE = "metadata.ser";
 	public static final String PEER_FOLDER = "DiskPeer";
+	private int serverPort;
 	
 	public static void main(String args[]) {
+		if(args.length != 1){
+			System.out.println("Invalid usage, wrong number of args");
+			System.exit(-1);
+		}
+		
+		int serverPort = Integer.valueOf(args[0]);
+		if(serverPort < 3000 || serverPort > 3002){
+			System.out.println("Must specify a port between 3000 and 3002");
+			System.exit(-1);
+		}
+		
 		peers = new ArrayList<ServerPeerListener>();
-		new Server(5000);
+		new Server(serverPort);
 	}
 	
 	public Server(int port) {
+		this.serverPort = port;
 		makeDirectory(Server.MASTER_FOLDER);
 		
 		// Set server key and truststore
@@ -50,9 +63,96 @@ public class Server {
 
 		new Thread(new ServerChannel(socket)).start();
 		
-		System.out.println("Server Socket running!");
+		connectToOtherServers();
 	}
 	
+	private void connectToOtherServers() {
+		otherServers = new ArrayList<ServerToServerChannel>();
+		
+		Socket socket = null;
+		int otherServerPort = getServerPort(serverPort, "FIRST");
+		
+		try
+		{
+			socket = new Socket(InetAddress.getByName("localhost"), otherServerPort);
+		}
+		catch(Exception e)
+		{
+			System.out.println("Problem creating socket to comunicate to other server");
+		}
+		
+		if(socket != null) {
+			// Start thread to listen the server
+			addOtherServer(socket);
+			System.out.println("Connected to other server.");
+		}
+		
+		otherServerPort = getServerPort(serverPort, "SECOND");
+		socket = null;
+		
+		try
+		{
+			socket = new Socket(InetAddress.getByName("localhost"), otherServerPort);
+		}
+		catch(Exception e)
+		{
+			System.out.println("Problem creating socket to comunicate to other server");
+		}
+		
+		if(socket != null) {
+			// Start thread to listen the server
+			addOtherServer(socket);			
+			System.out.println("Connected to other server.");
+		}
+
+		// Allow the others servers to connect with me
+		try
+		{
+			ServerSocket serverSocket = new ServerSocket(serverPort);
+			
+			ServerToServerListener otherServerListener = new ServerToServerListener(serverSocket);
+			new Thread(otherServerListener).start();
+		}
+		catch (IOException e)
+		{
+			System.out.println("Problem opening connection to other servers");
+			System.exit(-1);
+		}
+	}
+	
+	private int getServerPort(int port, String next) {
+		int otherPort = -1;
+		switch (port) {
+	        case 3000:          	
+	            if(next.equals("FIRST")) {
+	            	otherPort = 3001;
+	            } else {
+	            	otherPort = 3002;
+	            }
+	        	break;
+	        case 3001:  
+	            if(next.equals("FIRST")) {
+	            	otherPort = 3000;
+	            } else {
+	            	otherPort = 3002;
+	            }
+	            break;
+	            
+	        case 3002:  
+	            if(next.equals("FIRST")) {
+	            	otherPort = 3000;
+	            } else {
+	            	otherPort = 3001;
+	            }
+	        	break;
+	        
+	        default: 
+	        	break;
+		}
+		
+		return otherPort;
+	}
+
 	private void makeDirectory(String path) {
 		File file = new File(path);
 
@@ -95,5 +195,16 @@ public class Server {
 		}
 		s += "DONE";
 		return s;
+	}
+
+	public static void removeOtherServer(ServerToServerChannel channel) {
+		otherServers.remove(channel);
+	}
+
+	public static void addOtherServer(Socket s) {
+		ServerToServerChannel otherServerChannel = new ServerToServerChannel(s);
+		new Thread(otherServerChannel).start();
+		
+		otherServers.add(otherServerChannel);
 	}
 }

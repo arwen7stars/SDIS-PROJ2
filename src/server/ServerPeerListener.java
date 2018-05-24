@@ -12,8 +12,6 @@ import java.io.PrintWriter;
 
 import javax.net.ssl.SSLSocket;
 
-import peer.Peer;
-
 public class ServerPeerListener implements Runnable {
 	private SSLSocket socket;
 	private PrintWriter out;
