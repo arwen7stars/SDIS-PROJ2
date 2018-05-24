@@ -137,9 +137,7 @@ public class Backup implements Runnable {
 				} else {
 					backupDone = true;
 				}
-			} catch (InterruptedException | ExecutionException e) {
-				System.out.println("Chunk thread timed out.");
-			}	
+			} catch (InterruptedException | ExecutionException e) {}	
 		}
 		
 		return backupDone;
