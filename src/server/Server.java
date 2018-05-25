@@ -2,15 +2,11 @@ package server;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
 import java.util.ArrayList;
 
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSocket;
-
-import peer.Peer;
 
 public class Server {
 	private SSLServerSocket socket;
@@ -29,11 +25,11 @@ public class Server {
 		makeDirectory(Server.MASTER_FOLDER);
 		
 		// Set server key and truststore
-		//System.setProperty("javax.net.ssl.trustStore", "../SSL/truststore"); UBUNTU
-		System.setProperty("javax.net.ssl.trustStore", "SSL/truststore");
+		System.setProperty("javax.net.ssl.trustStore", "../SSL/truststore"); // UBUNTU
+		//System.setProperty("javax.net.ssl.trustStore", "SSL/truststore");
 		System.setProperty("javax.net.ssl.trustStorePassword", "123456");
-		//System.setProperty("javax.net.ssl.keyStore", "../SSL/server.keys"); UBUNTU
-		System.setProperty("javax.net.ssl.keyStore", "SSL/server.keys");
+		System.setProperty("javax.net.ssl.keyStore", "../SSL/server.keys"); // UBUNTU
+		// System.setProperty("javax.net.ssl.keyStore", "SSL/server.keys");
 		System.setProperty("javax.net.ssl.keyStorePassword", "123456");		
 		
 		SSLServerSocketFactory ssf = (SSLServerSocketFactory) SSLServerSocketFactory.getDefault(); 
@@ -66,6 +62,15 @@ public class Server {
 		new Thread(peer_channel).start();
 		
 		peers.add(peer_channel);
+	}
+
+	public static void removePeerListener(int peerID) {
+		for(ServerPeerListener peer : peers) {
+			if (peer.getPeerID() == peerID) {
+				peers.remove(peer);
+				break;
+			}
+		}
 	}
 	
 	public static void removePeerListener(ServerPeerListener spl) {

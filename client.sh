@@ -1,2 +1,2 @@
 #!/bin/sh
-cd bin && java client.Client peer1 BACKUP 05remoting.pdf 1
+cd bin && java client.Client peer1 RESTORE 05remoting.pdf

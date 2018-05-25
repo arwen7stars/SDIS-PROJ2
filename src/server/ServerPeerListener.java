@@ -12,8 +12,6 @@ import java.io.PrintWriter;
 
 import javax.net.ssl.SSLSocket;
 
-import peer.Peer;
-
 public class ServerPeerListener implements Runnable {
 	private SSLSocket socket;
 	private PrintWriter out;
@@ -43,9 +41,7 @@ public class ServerPeerListener implements Runnable {
 			String msg = null;
 				
 			try {
-				//System.out.println("\nWaiting for peers to comunicate with me...");
 				msg = in.readLine();
-				System.out.println("\nReceived message from peer: " + msg);
 			} catch (IOException e) {
 				// Peer disconnected so the socket has to be removed
 				Server.removePeerListener(this);
@@ -53,7 +49,11 @@ public class ServerPeerListener implements Runnable {
 			}
 				
 			if(msg != null) {
+				System.out.println("\nReceived message from peer: " + msg);
 				handleMessage(msg.split(" "));
+			} else {
+				System.out.println("Deleted peer " + peerID + " from server");
+				alive = false;
 			}
 		}
 	}

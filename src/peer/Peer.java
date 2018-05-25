@@ -152,7 +152,7 @@ public class Peer implements IRMI {
 			if(metadataResponse == 1) {
 				try {
 					ObjectInputStream serverStream = new ObjectInputStream(new FileInputStream(
-							Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + this.serverID + "/" + Peer.METADATA_FILE));
+					Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + this.serverID + "/" + Peer.METADATA_FILE));
 					dataManager = (MetadataManager) serverStream.readObject();
 					
 					serverStream.close();
@@ -172,17 +172,17 @@ public class Peer implements IRMI {
 
 	public void connectToMasterServer() {
 		// Set client key and truststore
-		//System.setProperty("javax.net.ssl.trustStore", "../SSL/truststore"); UBUNTU
-		System.setProperty("javax.net.ssl.trustStore", "SSL/truststore");
+		System.setProperty("javax.net.ssl.trustStore", "../SSL/truststore"); // UBUNTU
+		// System.setProperty("javax.net.ssl.trustStore", "SSL/truststore");
 		System.setProperty("javax.net.ssl.trustStorePassword", "123456");
-		//System.setProperty("javax.net.ssl.keyStore", "../SSL/client.keys"); UBUNTU
-		System.setProperty("javax.net.ssl.keyStore", "SSL/client.keys");
+		System.setProperty("javax.net.ssl.keyStore", "../SSL/client.keys"); // UBUNTU
+		// System.setProperty("javax.net.ssl.keyStore", "SSL/client.keys");
 		System.setProperty("javax.net.ssl.keyStorePassword", "123456");
 		
 		// connects to master peer by its port
 		SSLSocketFactory sf = (SSLSocketFactory) SSLSocketFactory.getDefault();
-		try {
-			socket = (SSLSocket) sf.createSocket("localhost", 5000);
+		try {		
+			socket = (SSLSocket) sf.createSocket("192.168.1.5", 5000);
 		} catch (IOException e) {
 			System.out.println("Can't connect to master server");
 			System.exit(-1);	// Shutdown the peer
@@ -191,7 +191,6 @@ public class Peer implements IRMI {
 		// allows to receive messages from master peer
 		this.serverChannel = new PeerServerListener(this, socket);
 		new Thread(serverChannel).start();
-		
 		notifyAuthenticationToServer();
 	}
 	

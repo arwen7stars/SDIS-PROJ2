@@ -1,7 +1,6 @@
 package peer;
 
 import java.io.BufferedReader;
-import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -29,9 +28,8 @@ public class PeerServerListener implements Runnable {
 	}
 	
 	@Override
-	public void run() {		
+	public void run() {	
 		//Scanner scanner = new Scanner(System.in);
-		
 		boolean alive = true;
 
 		while(alive) {			
@@ -58,8 +56,9 @@ public class PeerServerListener implements Runnable {
 			}
 			
 			if(msg != null) {
+				System.out.println("I received a message " + msg);
 				handleMessage(msg.split(" "));
-			}
+			} else alive = false;
 		}  
 		
 		// Tries to reconnect after connection server has been lost
