@@ -182,7 +182,7 @@ public class Peer implements IRMI {
 		// connects to master peer by its port
 		SSLSocketFactory sf = (SSLSocketFactory) SSLSocketFactory.getDefault();
 		try {		
-			socket = (SSLSocket) sf.createSocket("192.168.1.5", 5000);
+			socket = (SSLSocket) sf.createSocket("localhost", 5000);
 		} catch (IOException e) {
 			System.out.println("Can't connect to master server");
 			System.exit(-1);	// Shutdown the peer
