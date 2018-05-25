@@ -16,7 +16,6 @@ public class ServerChannel implements Runnable {
 	public void run() {
 		while(true) {
 			try {
-				System.out.println("Waiting for a peer to authenticate...");
 				SSLSocket s = (SSLSocket) socket.accept();
 			
 		        System.out.println("Peer authenticated with success.\n");

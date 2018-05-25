@@ -28,7 +28,6 @@ public class BackupMetadata implements Runnable {
 
 	@Override
 	public void run() {
-		System.out.println("boas");
 		while(true) {
 			// Schedule task to send metadata to server
 			DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
