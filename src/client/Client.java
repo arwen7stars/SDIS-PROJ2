@@ -17,8 +17,8 @@ public class Client {
 		access_rmi = "peer1";
 		operation = "BACKUP";
 		operands = new ArrayList<String>();
-		operands.add("05remoting.pdf");
-		operands.add("2");
+		operands.add("test64.txt");
+		operands.add("1");
 		
 		/*if(!initArgs(args))
 			return;*/

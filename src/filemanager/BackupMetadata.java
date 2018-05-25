@@ -19,7 +19,7 @@ import peer.Peer;
 
 public class BackupMetadata implements Runnable {
 	
-	private static final int BACKUP_INTERVAL = 30; //seconds
+	private static final int BACKUP_INTERVAL = 5; //seconds
 	private Peer peer;
 	
 	public BackupMetadata(Peer peer) {
@@ -29,11 +29,7 @@ public class BackupMetadata implements Runnable {
 	@Override
 	public void run() {
 		while(true) {
-			// Schedule task to send metadata to server
-			DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-			Date date = new Date();
-			System.out.println("Sending metadata to server: "+ dateFormat.format(date));
-			
+			// Schedule task to send metadata to server			
 			ScheduledExecutorService scheduledPool = Executors.newScheduledThreadPool(1);
 			Future<Boolean> future = scheduledPool.schedule(sendMetadata, BACKUP_INTERVAL, TimeUnit.SECONDS);
 			try {
@@ -56,7 +52,9 @@ public class BackupMetadata implements Runnable {
 	        	bis.close();
 	        	fis.close();
 	        	
-	        	System.out.println("Sending metadata to server with "+bytes.length+" bytes");
+				DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+				Date date = new Date();
+				System.out.println("Sending metadata to server ("+ bytes.length + " bytes): "+ dateFormat.format(date));
 	        	
 	        	peer.getServerChannel().sendMessage("SAVE_METADATA");
 	        	peer.getServerChannel().sendBytes(bytes);   

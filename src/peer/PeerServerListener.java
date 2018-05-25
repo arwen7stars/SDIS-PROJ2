@@ -63,7 +63,7 @@ public class PeerServerListener implements Runnable {
 		}  
 		
 		// Tries to reconnect after connection server has been lost
-		peer.connectToMasterServer();
+		peer.connectToServer();
 	}
 	
 	private void handleMessage(String[] msg) {
