@@ -55,4 +55,4 @@ local.properties
 
 # Ignore files from Peers and Master
 Peers/*
-Master/*
+Server*
