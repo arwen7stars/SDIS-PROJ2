@@ -48,13 +48,14 @@ public class Peer implements IRMI {
 	public static final String METADATA_FILE = "metadata.ser";
 	
 	// Network configurations
+	private String hostIP;
 	private SSLSocket socket;
 	private DatagramSocket senderSocket;
 	private PeerServerListener serverChannel;
 
 	// Peer configurations
-	private String protocolVersion;
 	private int serverID;
+	private String protocolVersion;
 
 	// Multicast configurations
 	private PeerChannel mcChannel;
@@ -88,11 +89,12 @@ public class Peer implements IRMI {
 	 */
 	private CopyOnWriteArrayList<String> receivedPutChunkMessages;
 	
-	public Peer(String protocol, int id) throws IOException, InterruptedException, ExecutionException {
+	public Peer(String protocol, int id, String hostIP) throws IOException, InterruptedException, ExecutionException {
 		this.protocolVersion = protocol;
 		this.serverID = id;
+		this.hostIP = hostIP;
 
-		// Make peer disk
+		// make peer disk
 		String peerDisk = PEERS_FOLDER + "/" + DISK_FOLDER + id;
 		String backupFiles = peerDisk + "/" + FILES_FOLDER;
 		String chunksFiles = peerDisk + "/" + CHUNKS_FOLDER;
@@ -119,10 +121,10 @@ public class Peer implements IRMI {
 		new Thread(mdbChannel).start();
 		new Thread(mdrChannel).start();		
 
-		// allows to send messages to other peers (including to master peer)
+		// allows to send messages to other peers (including the master peer)
 		this.senderSocket = new DatagramSocket();
 		
-		// Manage Metadata
+		// manage Metadata
 		getMetadata();
 		new Thread(new BackupMetadata(this)).start();
 	}
@@ -170,10 +172,10 @@ public class Peer implements IRMI {
 
 	public void connectToServer() {
 		// Set client key and truststore
-		//System.setProperty("javax.net.ssl.trustStore", "../SSL/truststore"); UBUNTU
-		System.setProperty("javax.net.ssl.trustStore", "SSL/truststore");
+		//System.setProperty("javax.net.ssl.trustStore", "../SSL/truststore"); // UBUNTU
+		 System.setProperty("javax.net.ssl.trustStore", "SSL/truststore");
 		System.setProperty("javax.net.ssl.trustStorePassword", "123456");
-		//System.setProperty("javax.net.ssl.keyStore", "../SSL/client.keys"); UBUNTU
+		//System.setProperty("javax.net.ssl.keyStore", "../SSL/client.keys"); // UBUNTU
 		System.setProperty("javax.net.ssl.keyStore", "SSL/client.keys");
 		System.setProperty("javax.net.ssl.keyStorePassword", "123456");
 		
@@ -189,7 +191,7 @@ public class Peer implements IRMI {
 		{			
 			try
 			{
-				socket = (SSLSocket) sf.createSocket(InetAddress.getByName("localhost"), serverPort);
+				socket = (SSLSocket) sf.createSocket(this.hostIP, serverPort);
 				connected = true;
 			}
 			catch (IOException e)
@@ -216,7 +218,6 @@ public class Peer implements IRMI {
 		// allows to receive messages from master peer
 		this.serverChannel = new PeerServerListener(this, socket);
 		new Thread(serverChannel).start();
-		
 		notifyAuthenticationToServer();
 	}
 	
@@ -262,7 +263,7 @@ public class Peer implements IRMI {
 		}
 	}
 
-	public void sendReplyToPeers(channelType type, byte[] packet) throws IOException {
+	public synchronized void sendReplyToPeers(channelType type, byte[] packet) throws IOException {
 		this.collectedAllPeers = false;
 		this.endpoints = new ArrayList<PeerEndpoint>();
 	
@@ -271,6 +272,10 @@ public class Peer implements IRMI {
 		while(!this.collectedAllPeers) {}
 		
 		for(PeerEndpoint peer : endpoints) {
+			if (peer.id == serverID) {					// Can't send messages to self
+				continue;
+			}
+
 			InetAddress address = InetAddress.getByName(peer.host);
 			
 			int port = -1;
@@ -341,6 +346,10 @@ public class Peer implements IRMI {
 
 	public int getServerID() {
 		return serverID;
+	}
+
+	public String getHostIP() {
+		return hostIP;
 	}
 
 	public PeerChannel getMcChannel() {

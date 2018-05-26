@@ -57,6 +57,10 @@ public class ServerPeerListener implements Runnable {
 				
 			if(msg != null) {
 				handleMessage(msg);
+			} else {
+				System.out.println("Deleted peer " + peerID + " from server");
+				Server.removePeerListener(this);
+				alive = false;
 			}
 		}
 	}
@@ -139,11 +143,9 @@ public class ServerPeerListener implements Runnable {
 				    
 				    // Send metadata to other servers
 				    ArrayList<ServerToServerChannel> otherServers = Server.getOtherServers();
-				    System.out.println("Vou enviar os metadados para " + otherServers.size() + " servidores");
 				    for(ServerToServerChannel serverChannel : otherServers)
 					{
 						serverChannel.sendMessage("SAVE_METADATA " +peerID);
-						//System.out.println("SEND BYTES: array.size = " + array.length + " - bytes: " +bytesToRead); 
 						serverChannel.sendBytes(array, bytesToRead);
 					}
 				}

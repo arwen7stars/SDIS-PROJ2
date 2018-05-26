@@ -49,13 +49,13 @@ public class Server {
 	public Server(int id, int port) {
 		serverID = id;
 		this.serverPort = port;
-		makeDirectory(Server.SERVER_FOLDER + this.serverID);
+		makeDirectory(Server.SERVER_FOLDER + serverID);
 		
 		// Set server key and truststore
-		//System.setProperty("javax.net.ssl.trustStore", "../SSL/truststore"); UBUNTU
+		//System.setProperty("javax.net.ssl.trustStore", "../SSL/truststore"); // UBUNTU
 		System.setProperty("javax.net.ssl.trustStore", "SSL/truststore");
 		System.setProperty("javax.net.ssl.trustStorePassword", "123456");
-		//System.setProperty("javax.net.ssl.keyStore", "../SSL/server.keys"); UBUNTU
+		//System.setProperty("javax.net.ssl.keyStore", "../SSL/server.keys"); // UBUNTU
 		System.setProperty("javax.net.ssl.keyStore", "SSL/server.keys");
 		System.setProperty("javax.net.ssl.keyStorePassword", "123456");		
 		
@@ -87,7 +87,7 @@ public class Server {
 		
 		try
 		{
-			socket = new Socket(InetAddress.getByName("localhost"), otherServerPort + 1000);
+			socket = new Socket(this.socket.getInetAddress(), otherServerPort + 1000);
 		}
 		catch(Exception e)
 		{
@@ -106,7 +106,7 @@ public class Server {
 		
 		try
 		{
-			socket = new Socket(InetAddress.getByName("localhost"), otherServerPort + 1000);
+			socket = new Socket(this.socket.getInetAddress(), otherServerPort + 1000);
 		}
 		catch(Exception e)
 		{
@@ -181,6 +181,15 @@ public class Server {
 		
 		peers.add(peer_channel);
 	}
+
+	public static void removePeerListener(int peerID) {
+		for(ServerPeerListener peer : peers) {
+			if (peer.getPeerID() == peerID) {
+				peers.remove(peer);
+				break;
+			}
+		}
+	}
 	
 	public static void removePeerListener(ServerPeerListener spl) {
 		peers.remove(spl);
@@ -194,7 +203,7 @@ public class Server {
 		{
 			SSLSocket socket = peer.getSocket();
 			
-			if( !socket.isConnected() || socket.isClosed() || socket.isOutputShutdown() || socket.isInputShutdown() )
+			if(!socket.isConnected() || socket.isClosed() || socket.isOutputShutdown() || socket.isInputShutdown() )
 				Server.removePeerListener(peer);
 
 			else{

@@ -20,7 +20,6 @@ public class Client {
 		try {
 			Registry registry = LocateRegistry.getRegistry("localhost");
 			IRMI rmi = (IRMI) registry.lookup(access_rmi);
-
 			switch (operation) {
 				case "BACKUP":
 					try {
