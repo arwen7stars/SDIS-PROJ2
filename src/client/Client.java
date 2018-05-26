@@ -14,19 +14,18 @@ public class Client {
 	private static ArrayList<String> operands;
 
 	public static void main(String args[]) {
-		access_rmi = "peer1";
+		/*access_rmi = "peer1";
 		operation = "BACKUP";
 		operands = new ArrayList<String>();
-		operands.add("05remoting.pdf");
-		operands.add("2");
+		operands.add("bigbackup.txt");
+		operands.add("2");*/
 		
-		/*if(!initArgs(args))
-			return;*/
+		if(!initArgs(args))
+			return;
 		
 		try {
 			Registry registry = LocateRegistry.getRegistry("localhost");
 			IRMI rmi = (IRMI) registry.lookup(access_rmi);
-
 			switch (operation) {
 				case "BACKUP":
 					try {

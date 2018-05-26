@@ -85,7 +85,7 @@ public class Server {
 		{
 			SSLSocket socket = peer.getSocket();
 			
-			if( !socket.isConnected() || socket.isClosed() || socket.isOutputShutdown() || socket.isInputShutdown() )
+			if(!socket.isConnected() || socket.isClosed() || socket.isOutputShutdown() || socket.isInputShutdown() )
 				Server.removePeerListener(peer);
 
 			else{
