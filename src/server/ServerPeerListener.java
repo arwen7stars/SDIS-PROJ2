@@ -53,6 +53,7 @@ public class ServerPeerListener implements Runnable {
 				handleMessage(msg.split(" "));
 			} else {
 				System.out.println("Deleted peer " + peerID + " from server");
+				Server.removePeerListener(this);
 				alive = false;
 			}
 		}

@@ -62,7 +62,7 @@ public class PeerServerListener implements Runnable {
 		}  
 		
 		// Tries to reconnect after connection server has been lost
-		peer.connectToMasterServer();
+		// peer.connectToMasterServer(peer.getHostIP()); ?? why does the peer need to try to reconnect to server?
 	}
 	
 	private void handleMessage(String[] msg) {
@@ -84,7 +84,6 @@ public class PeerServerListener implements Runnable {
 				
 			case "DONE":
 				this.peer.setCollectedAllPeers(true);
-				
 				break;
 				
 			case "METADATA":

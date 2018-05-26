@@ -47,13 +47,14 @@ public class Peer implements IRMI {
 	public static final String METADATA_FILE = "metadata.ser";
 	
 	// Network configurations
+	private String hostIP;
 	private SSLSocket socket;
 	private DatagramSocket senderSocket;
 	private PeerServerListener serverChannel;
 
 	// Peer configurations
-	private String protocolVersion;
 	private int serverID;
+	private String protocolVersion;
 
 	// Multicast configurations
 	private PeerChannel mcChannel;
@@ -87,11 +88,12 @@ public class Peer implements IRMI {
 	 */
 	private CopyOnWriteArrayList<String> receivedPutChunkMessages;
 	
-	public Peer(String protocol, int id) throws IOException, InterruptedException, ExecutionException {
+	public Peer(String protocol, int id, String hostIP) throws IOException, InterruptedException, ExecutionException {
 		this.protocolVersion = protocol;
 		this.serverID = id;
+		this.hostIP = hostIP;
 
-		// Make peer disk
+		// make peer disk
 		String peerDisk = PEERS_FOLDER + "/" + DISK_FOLDER + id;
 		String backupFiles = peerDisk + "/" + FILES_FOLDER;
 		String chunksFiles = peerDisk + "/" + CHUNKS_FOLDER;
@@ -111,17 +113,17 @@ public class Peer implements IRMI {
 		mdbChannel = new PeerChannel(this);
 		mdrChannel = new PeerChannel(this);
 		
-		connectToMasterServer();
+		connectToMasterServer(hostIP);
 		
 		// these channels will receive messages from other peers (other than master peer)
 		new Thread(mcChannel).start();
 		new Thread(mdbChannel).start();
 		new Thread(mdrChannel).start();		
 
-		// allows to send messages to other peers (including to master peer)
+		// allows to send messages to other peers (including the master peer)
 		this.senderSocket = new DatagramSocket();
 		
-		// Manage Metadata
+		// manage Metadata
 		getMetadata();
 		new Thread(new BackupMetadata(this)).start();
 	}
@@ -170,7 +172,7 @@ public class Peer implements IRMI {
 		return this.metadataServer;
 	};
 
-	public void connectToMasterServer() {
+	public void connectToMasterServer(String hostIP) {
 		// Set client key and truststore
 		System.setProperty("javax.net.ssl.trustStore", "../SSL/truststore"); // UBUNTU
 		// System.setProperty("javax.net.ssl.trustStore", "SSL/truststore");
@@ -182,7 +184,7 @@ public class Peer implements IRMI {
 		// connects to master peer by its port
 		SSLSocketFactory sf = (SSLSocketFactory) SSLSocketFactory.getDefault();
 		try {		
-			socket = (SSLSocket) sf.createSocket("localhost", 5000);
+			socket = (SSLSocket) sf.createSocket(hostIP, 5000);
 		} catch (IOException e) {
 			System.out.println("Can't connect to master server");
 			System.exit(-1);	// Shutdown the peer
@@ -236,7 +238,7 @@ public class Peer implements IRMI {
 		}
 	}
 
-	public void sendReplyToPeers(channelType type, byte[] packet) throws IOException {
+	public synchronized void sendReplyToPeers(channelType type, byte[] packet) throws IOException {
 		this.collectedAllPeers = false;
 		this.endpoints = new ArrayList<PeerEndpoint>();
 	
@@ -245,6 +247,10 @@ public class Peer implements IRMI {
 		while(!this.collectedAllPeers) {}
 		
 		for(PeerEndpoint peer : endpoints) {
+			if (peer.id == serverID) {					// Can't send messages to self
+				continue;
+			}
+
 			InetAddress address = InetAddress.getByName(peer.host);
 			
 			int port = -1;
@@ -315,6 +321,10 @@ public class Peer implements IRMI {
 
 	public int getServerID() {
 		return serverID;
+	}
+
+	public String getHostIP() {
+		return hostIP;
 	}
 
 	public PeerChannel getMcChannel() {
