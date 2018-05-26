@@ -9,6 +9,7 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
+import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -113,7 +114,7 @@ public class Peer implements IRMI {
 		mdbChannel = new PeerChannel(this);
 		mdrChannel = new PeerChannel(this);
 		
-		connectToMasterServer(hostIP);
+		connectToServer();
 		
 		// these channels will receive messages from other peers (other than master peer)
 		new Thread(mcChannel).start();
@@ -146,49 +147,73 @@ public class Peer implements IRMI {
 			metadataServer = -1;
 			serverChannel.sendMessage("GET_METADATA");
 			
-			// Schedule task to check response from server
+			// Schedule task to check response from server and load metadata
 			ScheduledExecutorService scheduledPool = Executors.newScheduledThreadPool(1);
-			Future<Integer> future = scheduledPool.schedule(getMetadataResponse, 1, TimeUnit.SECONDS);
-			int metadataResponse = future.get();
-			
-			if(metadataResponse == 1) {
-				try {
-					ObjectInputStream serverStream = new ObjectInputStream(new FileInputStream(
-					Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + this.serverID + "/" + Peer.METADATA_FILE));
-					dataManager = (MetadataManager) serverStream.readObject();
-					
-					serverStream.close();
-				} catch (IOException | ClassNotFoundException e) {
-					System.err.println("Error loading the metadata file on Peer.");				
-				}
-			} else {
-				// Create MetadataManager empty
-				dataManager = new MetadataManager(this.serverID);
-			}
+			scheduledPool.schedule(loadMetadata, 500, TimeUnit.MILLISECONDS);
 		}
 	}
 	
-	Callable<Integer> getMetadataResponse = () -> {
-		return this.metadataServer;
+	Runnable loadMetadata = () -> {
+		if(this.metadataServer == 1) {
+			try {
+				ObjectInputStream serverStream = new ObjectInputStream(new FileInputStream(
+						Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + this.serverID + "/" + Peer.METADATA_FILE));
+				dataManager = (MetadataManager) serverStream.readObject();
+				
+				serverStream.close();
+			} catch (IOException | ClassNotFoundException e) {
+				System.err.println("Error loading the metadata file on Peer.");				
+			}
+		} else {
+			// Create MetadataManager empty
+			dataManager = new MetadataManager(this.serverID);
+		}
 	};
 
-	public void connectToMasterServer(String hostIP) {
+	public void connectToServer() {
 		// Set client key and truststore
-		System.setProperty("javax.net.ssl.trustStore", "../SSL/truststore"); // UBUNTU
-		// System.setProperty("javax.net.ssl.trustStore", "SSL/truststore");
+		//System.setProperty("javax.net.ssl.trustStore", "../SSL/truststore"); // UBUNTU
+		 System.setProperty("javax.net.ssl.trustStore", "SSL/truststore");
 		System.setProperty("javax.net.ssl.trustStorePassword", "123456");
-		System.setProperty("javax.net.ssl.keyStore", "../SSL/client.keys"); // UBUNTU
-		// System.setProperty("javax.net.ssl.keyStore", "SSL/client.keys");
+		//System.setProperty("javax.net.ssl.keyStore", "../SSL/client.keys"); // UBUNTU
+		System.setProperty("javax.net.ssl.keyStore", "SSL/client.keys");
 		System.setProperty("javax.net.ssl.keyStorePassword", "123456");
 		
-		// connects to master peer by its port
 		SSLSocketFactory sf = (SSLSocketFactory) SSLSocketFactory.getDefault();
-		try {		
-			socket = (SSLSocket) sf.createSocket(hostIP, 5000);
-		} catch (IOException e) {
-			System.out.println("Can't connect to master server");
-			System.exit(-1);	// Shutdown the peer
+		
+		// Tries to connect to one server
+		Random rand = new Random();
+		int  n = rand.nextInt(3); // Number between 0 and 2
+		int serverPort = 3000 + n;		
+		
+		boolean connected = false;
+		while(!connected)
+		{			
+			try
+			{
+				socket = (SSLSocket) sf.createSocket(this.hostIP, serverPort);
+				connected = true;
+			}
+			catch (IOException e)
+			{
+				connected = false;
+				serverPort++;
+				
+				// Exceeded the limit
+				if(serverPort == 3003) {
+					serverPort = 3000;
+				}
+				
+				// Went through all the ports
+				if(serverPort == 3000 + n)
+				{
+					System.out.println("Can't connect to any server.");
+					System.exit(-1); // Shutdown the peer
+				}
+			}
 		}
+		
+		System.out.println("Connected to server with port: "+serverPort);
 		
 		// allows to receive messages from master peer
 		this.serverChannel = new PeerServerListener(this, socket);

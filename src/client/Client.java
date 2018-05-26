@@ -13,13 +13,7 @@ public class Client {
 	private static String operation;
 	private static ArrayList<String> operands;
 
-	public static void main(String args[]) {
-		/*access_rmi = "peer1";
-		operation = "BACKUP";
-		operands = new ArrayList<String>();
-		operands.add("bigbackup.txt");
-		operands.add("2");*/
-		
+	public static void main(String args[]) {		
 		if(!initArgs(args))
 			return;
 		

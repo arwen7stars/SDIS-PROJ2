@@ -75,7 +75,7 @@ public class MetadataManager implements Serializable {
 		this.chunksStoredSize = new ConcurrentHashMap<String, Integer>();
 	}
 
-	// Method to save all the runtime data of the server
+	// Method to save all the runtime data of the peer
 	public synchronized void saveMetadata() {
 		try {
 			ObjectOutputStream serverStream = new ObjectOutputStream(new FileOutputStream(
