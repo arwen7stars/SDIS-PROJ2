@@ -19,7 +19,7 @@ import peer.Peer;
 
 public class BackupMetadata implements Runnable {
 	
-	private static final int BACKUP_INTERVAL = 5; //seconds
+	private static final int BACKUP_INTERVAL = 30; //seconds
 	private Peer peer;
 	
 	public BackupMetadata(Peer peer) {

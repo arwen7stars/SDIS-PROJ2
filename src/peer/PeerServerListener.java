@@ -29,23 +29,10 @@ public class PeerServerListener implements Runnable {
 	}
 	
 	@Override
-	public void run() {		
-		//Scanner scanner = new Scanner(System.in);
-		
+	public void run() {				
 		boolean alive = true;
 
-		while(alive) {			
-			/*System.out.print("Enter something: ");
-			String input = scanner.nextLine();
-            out.println(input);
-            
-            System.out.println("Sent msg to server.");
-            try {
-				System.out.println("Response: " + in.readLine());
-			} catch (IOException e1) {
-				e1.printStackTrace();
-			}*/
-			
+		while(alive) {						
 			String msg = null;
 			
 			try {

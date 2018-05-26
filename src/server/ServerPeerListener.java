@@ -48,7 +48,6 @@ public class ServerPeerListener implements Runnable {
 			String msg = null;
 				
 			try {
-				//System.out.println("\nWaiting for peers to comunicate with me...");
 				msg = in.readLine();
 				System.out.println("\nReceived message from peer: " + msg);
 			} catch (IOException e) {
@@ -58,12 +57,14 @@ public class ServerPeerListener implements Runnable {
 			}
 				
 			if(msg != null) {
-				handleMessage(msg.split(" "));
+				handleMessage(msg);
 			}
 		}
 	}
 	
-	private void handleMessage(String [] msg) {
+	private void handleMessage(String message) {
+		String [] msg = message.split(" ");
+		
 		switch(msg[0]) {
 			case "REGISTER":
 				this.peerID = Integer.parseInt(msg[1]);
@@ -139,18 +140,13 @@ public class ServerPeerListener implements Runnable {
 				    fout.write(array, 0, bytesToRead);
 				    fout.close();
 				    
-				    System.out.println("Metadata from Peer"+peerID+" stored with " + bytesToRead + " bytes");
-
-				    // TO DO Quando tiver corrigido, mandar o array e os bytesToRead
-			        //ByteArrayOutputStream baos = new ByteArrayOutputStream();
-			        //baos.write(array, 0, bytesToRead);
-			        //byte[] bytes = baos.toByteArray();
-				    
 				    // Send metadata to other servers
 				    ArrayList<ServerToServerChannel> otherServers = Server.getOtherServers();
+				    System.out.println("Vou enviar os metadados para " + otherServers.size() + " servidores");
 				    for(ServerToServerChannel serverChannel : otherServers)
 					{
 						serverChannel.sendMessage("SAVE_METADATA");
+						//System.out.println("SEND BYTES: array.size = " + array.length + " - bytes: " +bytesToRead); 
 						serverChannel.sendBytes(array, bytesToRead);
 					}
 				}
