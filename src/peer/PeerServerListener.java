@@ -36,8 +36,6 @@ public class PeerServerListener implements Runnable {
 			String msg = null;
 			
 			try {
-				//System.out.println("Peer socket " + peer.getServerID() + " listening to messages from the server...");
-
 				msg = in.readLine();
 			} catch (IOException e) {
 				System.out.println("Lost connection to Server");
@@ -110,13 +108,15 @@ public class PeerServerListener implements Runnable {
 				
 			default:
 				System.out.println("Peer:: Error processing message from server.");
+				System.out.println(msg);
+				
+				break;
 		}
 	}
 	
 	public void sendMessage(String message)
 	{		
 		out.println(message);
-		System.out.println("Sent message " + message);
 	}
 	
 	public void sendBytes(byte[] message)

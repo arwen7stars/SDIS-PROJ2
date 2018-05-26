@@ -180,8 +180,6 @@ public class Server {
 		new Thread(peer_channel).start();
 		
 		peers.add(peer_channel);
-		
-		// Make directory for peer
 	}
 	
 	public static void removePeerListener(ServerPeerListener spl) {

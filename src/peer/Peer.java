@@ -182,14 +182,7 @@ public class Peer implements IRMI {
 		// Tries to connect to one server
 		Random rand = new Random();
 		int  n = rand.nextInt(3); // Number between 0 and 2
-		
-		// JUST FOR TESTS
-		int serverPort = 3000;
-		if(this.serverID == 2) {
-			serverPort = 3001;
-		}
-		
-		//int serverPort = 3000 + n;		
+		int serverPort = 3000 + n;		
 		
 		boolean connected = false;
 		while(!connected)

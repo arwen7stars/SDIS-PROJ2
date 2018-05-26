@@ -49,7 +49,6 @@ public class ServerPeerListener implements Runnable {
 				
 			try {
 				msg = in.readLine();
-				System.out.println("\nReceived message from peer: " + msg);
 			} catch (IOException e) {
 				// Peer disconnected so the socket has to be removed
 				Server.removePeerListener(this);
@@ -83,8 +82,6 @@ public class ServerPeerListener implements Runnable {
 				
 				for(String peer : peersFromOtherServers)
 				{
-					System.out.println("Enviei este peer do outro server:");
-					System.out.println(peer + "\n");
 					out.println(peer);
 				}
 				
@@ -145,7 +142,7 @@ public class ServerPeerListener implements Runnable {
 				    System.out.println("Vou enviar os metadados para " + otherServers.size() + " servidores");
 				    for(ServerToServerChannel serverChannel : otherServers)
 					{
-						serverChannel.sendMessage("SAVE_METADATA");
+						serverChannel.sendMessage("SAVE_METADATA " +peerID);
 						//System.out.println("SEND BYTES: array.size = " + array.length + " - bytes: " +bytesToRead); 
 						serverChannel.sendBytes(array, bytesToRead);
 					}
