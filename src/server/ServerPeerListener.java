@@ -2,6 +2,7 @@ package server;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -9,6 +10,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import javax.net.ssl.SSLSocket;
 
@@ -49,8 +56,7 @@ public class ServerPeerListener implements Runnable {
 			}
 				
 			if(msg != null) {
-				System.out.println("\nReceived message from peer: " + msg);
-				handleMessage(msg.split(" "));
+				handleMessage(msg);
 			} else {
 				System.out.println("Deleted peer " + peerID + " from server");
 				Server.removePeerListener(this);
@@ -59,7 +65,9 @@ public class ServerPeerListener implements Runnable {
 		}
 	}
 	
-	private void handleMessage(String [] msg) {
+	private void handleMessage(String message) {
+		String [] msg = message.split(" ");
+		
 		switch(msg[0]) {
 			case "REGISTER":
 				this.peerID = Integer.parseInt(msg[1]);
@@ -67,15 +75,27 @@ public class ServerPeerListener implements Runnable {
 				this.MDBPort = Integer.parseInt(msg[3]);
 				this.MDRPort = Integer.parseInt(msg[4]);
 				
+				Server.makePeerDirectory(peerID);
 				System.out.println("Peer "+peerID+ " registered with success.");
 											
 				break;
 				
 			case "GETPEERS":
+				// Send peers connected to other servers
+				ArrayList<String> peersFromOtherServers = Server.getPeersFromOtherServers();
+				
+				for(String peer : peersFromOtherServers)
+				{
+					out.println(peer);
+				}
+				
+				// Send peers connected to this server
 				out.println(Server.getPeers());
 				
+				break;
+				
 			case "GET_METADATA":
-				File file = new File(Server.MASTER_FOLDER + "/" + Server.PEER_FOLDER + this.peerID + "/" + Server.METADATA_FILE);
+				File file = new File(Server.SERVER_FOLDER + Server.getServerID() + "/" + Server.PEER_FOLDER + this.peerID + "/" + Server.METADATA_FILE);
 				
 				if(file.exists())
 				{
@@ -112,7 +132,7 @@ public class ServerPeerListener implements Runnable {
 				    InputStream inputS = socket.getInputStream();
 				    int bytesToRead = inputS.read(array);
 
-				    File mFile = new File(Server.MASTER_FOLDER + "/" + Server.PEER_FOLDER + peerID + "/" + Server.METADATA_FILE);
+				    File mFile = new File(Server.SERVER_FOLDER + Server.getServerID() + "/" + Server.PEER_FOLDER + peerID + "/" + Server.METADATA_FILE);
 
 				    if(mFile.exists())
 				    	mFile.delete();
@@ -121,7 +141,13 @@ public class ServerPeerListener implements Runnable {
 				    fout.write(array, 0, bytesToRead);
 				    fout.close();
 				    
-				    System.out.println("Metadata from Peer"+peerID+" stored with " + bytesToRead + " bytes");
+				    // Send metadata to other servers
+				    ArrayList<ServerToServerChannel> otherServers = Server.getOtherServers();
+				    for(ServerToServerChannel serverChannel : otherServers)
+					{
+						serverChannel.sendMessage("SAVE_METADATA " +peerID);
+						serverChannel.sendBytes(array, bytesToRead);
+					}
 				}
 				catch(Exception e)
 				{
