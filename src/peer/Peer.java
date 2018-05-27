@@ -172,11 +172,11 @@ public class Peer implements IRMI {
 
 	public void connectToServer() {
 		// Set client key and truststore
-		//System.setProperty("javax.net.ssl.trustStore", "../SSL/truststore"); // UBUNTU
-		 System.setProperty("javax.net.ssl.trustStore", "SSL/truststore");
+		System.setProperty("javax.net.ssl.trustStore", "../SSL/truststore"); // UBUNTU
+		// System.setProperty("javax.net.ssl.trustStore", "SSL/truststore");
 		System.setProperty("javax.net.ssl.trustStorePassword", "123456");
-		//System.setProperty("javax.net.ssl.keyStore", "../SSL/client.keys"); // UBUNTU
-		System.setProperty("javax.net.ssl.keyStore", "SSL/client.keys");
+		System.setProperty("javax.net.ssl.keyStore", "../SSL/client.keys"); // UBUNTU
+		//System.setProperty("javax.net.ssl.keyStore", "SSL/client.keys");
 		System.setProperty("javax.net.ssl.keyStorePassword", "123456");
 		
 		SSLSocketFactory sf = (SSLSocketFactory) SSLSocketFactory.getDefault();

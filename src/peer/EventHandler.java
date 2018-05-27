@@ -14,8 +14,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import encryption.AESFileDecryption;
-import encryption.AESFileEncryption;
 import filemanager.FileChunk;
 import protocols.Delete;
 
@@ -137,12 +135,6 @@ public class EventHandler implements Runnable {
 				return;
 			}
 		
-			String fileName = header[4] + "_" + header[3];
-			String filePath = Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + peer.getServerID() + "/" + Peer.CHUNKS_FOLDER + "/";
-			String pass = "peer" + peer.getServerID(); 
-			
-			decryptChunk(pass, fileName, filePath); 
-			
 			hashmapKey = header[4] + "_" + header[3];
 
 			//Ignore If I don't have the chunk stored
@@ -310,39 +302,11 @@ public class EventHandler implements Runnable {
 		return packet;
 	}
 
-	private void encryptChunk(String pass, String fileName, String filePath) {
-		
-		AESFileEncryption AESFileEncryption = new AESFileEncryption();
-		try {
-			AESFileEncryption.Encryption(pass, this.body, fileName, filePath);
-		} catch (Exception e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
-		
-	}
-	
-	private void decryptChunk(String pass, String fileName, String filePath) {
-		
-		AESFileDecryption AESFileDecryption = new AESFileDecryption();
-		try {
-			AESFileDecryption.Decryption(pass, fileName, filePath);
-		} catch (Exception e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
-		
-	}
 	
 	Runnable storeChunk = () -> {
 		
-		String fileName = this.header[4] + "_" + this.header[3];
-		String filePath = Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + peer.getServerID() + "/" + Peer.CHUNKS_FOLDER + "/";
-		String pass = "peer" + peer.getServerID();  
 		
-		encryptChunk(pass, fileName, filePath);
-		
-/*		String filePath = Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + peer.getServerID() + "/" + Peer.CHUNKS_FOLDER + "/"
+		String filePath = Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + peer.getServerID() + "/" + Peer.CHUNKS_FOLDER + "/"
 				+ this.header[4] + "_" + this.header[3];
 
 		try (FileOutputStream fos = new FileOutputStream(filePath)) {
@@ -350,7 +314,7 @@ public class EventHandler implements Runnable {
 		} catch (IOException e) {
 			System.out.println("Error saving chunk file");
 		}
-*/
+
 		
 		// Save chunks information
 		this.peer.getMetadataManager().getChunksStoredSize().put(this.header[4] + "_" + this.header[3], this.body.length);

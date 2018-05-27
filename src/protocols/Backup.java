@@ -13,6 +13,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 
+import encryption.AES;
 import filemanager.FileChunk;
 import filemanager.FileIdentifier;
 import peer.*;
@@ -91,9 +92,17 @@ public class Backup implements Runnable {
 			
 			while ((size = bis.read(buffer)) > 0) {
 				byte[] content = new byte[size];
-				System.arraycopy(buffer, 0, content, 0, size);				
+				System.arraycopy(buffer, 0, content, 0, size);	
 				
-				Future<Boolean> result = scheduledPool.submit(new FileChunk(this.fileID, chunkNr, content, this.replicationDegree, this.peer));
+				
+				//Chunk encryption 
+				String secretKey = "peer" + this.peer.getServerID();   
+				AES AES = new AES();
+				byte[] contentEncrypted = AES.encrypt(content, secretKey) ;
+				
+				
+				
+				Future<Boolean> result = scheduledPool.submit(new FileChunk(this.fileID, chunkNr, contentEncrypted, this.replicationDegree, this.peer));
 				threadResults.add(result);
 
 				this.peer.getMetadataManager().getDesiredReplicationDegrees().put(chunkNr + "_" + this.fileID, this.replicationDegree);

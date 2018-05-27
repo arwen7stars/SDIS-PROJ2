@@ -10,6 +10,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import encryption.AES;
 import filemanager.FileIdentifier;
 import peer.EventHandler;
 import peer.Peer;
@@ -78,7 +79,12 @@ public class Restore implements Runnable {
 			} else {
 				// Check if it was the last chunk
 				byte[] chunk = this.peer.getRestoredChunks().get(this.actualChunk + "_" + this.fileID);
-				this.fileChunks.put(this.actualChunk, chunk);
+				
+				String secretKey = "peer" + this.peer.getServerID(); 
+				AES AES = new AES();
+				byte[] chunkDecrypted = AES.decrypt(chunk, secretKey);
+				
+				this.fileChunks.put(this.actualChunk, chunkDecrypted);
 
 				if (chunk.length < CHUNK_MAX_SIZE) {
 					restored = true;
