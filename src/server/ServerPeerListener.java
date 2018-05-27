@@ -148,6 +148,8 @@ public class ServerPeerListener implements Runnable {
 						serverChannel.sendMessage("SAVE_METADATA " +peerID);
 						serverChannel.sendBytes(array, bytesToRead);
 					}
+				    
+				    System.out.println("Metadata file from Peer"+peerID + " stored with success.");
 				}
 				catch(Exception e)
 				{

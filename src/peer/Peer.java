@@ -42,8 +42,8 @@ public class Peer implements IRMI {
 	public static final String PEERS_FOLDER = "Peers";
 	public static final String DISK_FOLDER = "DiskPeer";
 	
-	public static final String SHARED_FOLDER = "Shared";
-	public static final String FILES_FOLDER = "Files";
+	public static final String FILES_FOLDER = "MyFiles";
+	public static final String RESTORED_FOLDER = "RestoredFiles";
 	public static final String CHUNKS_FOLDER = "Chunks";
 	public static final String METADATA_FILE = "metadata.ser";
 	
@@ -54,7 +54,7 @@ public class Peer implements IRMI {
 	private PeerServerListener serverChannel;
 
 	// Peer configurations
-	private int serverID;
+	private int peerID;
 	private String protocolVersion;
 
 	// Multicast configurations
@@ -91,19 +91,19 @@ public class Peer implements IRMI {
 	
 	public Peer(String protocol, int id, String hostIP) throws IOException, InterruptedException, ExecutionException {
 		this.protocolVersion = protocol;
-		this.serverID = id;
+		this.peerID = id;
 		this.hostIP = hostIP;
 
 		// make peer disk
 		String peerDisk = PEERS_FOLDER + "/" + DISK_FOLDER + id;
 		String backupFiles = peerDisk + "/" + FILES_FOLDER;
 		String chunksFiles = peerDisk + "/" + CHUNKS_FOLDER;
-		String sharedFolder = PEERS_FOLDER + "/" + SHARED_FOLDER;
+		String restoredFile = peerDisk + "/" + RESTORED_FOLDER;
 
 		makeDirectory(peerDisk);
 		makeDirectory(backupFiles);
 		makeDirectory(chunksFiles);
-		makeDirectory(sharedFolder);
+		makeDirectory(restoredFile);
 
 		this.receivedChunkMessages = new CopyOnWriteArrayList<String>();
 		this.receivedPutChunkMessages = new CopyOnWriteArrayList<String>();
@@ -130,12 +130,12 @@ public class Peer implements IRMI {
 	}
 	
 	public void getMetadata() throws InterruptedException, ExecutionException {
-		File file = new File(Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + this.serverID + "/" + Peer.METADATA_FILE);
+		File file = new File(Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + this.peerID + "/" + Peer.METADATA_FILE);
 		
 		if (file.exists()) {
 			try {
 				ObjectInputStream serverStream = new ObjectInputStream(new FileInputStream(
-						Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + this.serverID + "/" + Peer.METADATA_FILE));
+						Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + this.peerID + "/" + Peer.METADATA_FILE));
 				dataManager = (MetadataManager) serverStream.readObject();
 				
 				serverStream.close();
@@ -157,7 +157,7 @@ public class Peer implements IRMI {
 		if(this.metadataServer == 1) {
 			try {
 				ObjectInputStream serverStream = new ObjectInputStream(new FileInputStream(
-						Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + this.serverID + "/" + Peer.METADATA_FILE));
+						Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + this.peerID + "/" + Peer.METADATA_FILE));
 				dataManager = (MetadataManager) serverStream.readObject();
 				
 				serverStream.close();
@@ -166,17 +166,17 @@ public class Peer implements IRMI {
 			}
 		} else {
 			// Create MetadataManager empty
-			dataManager = new MetadataManager(this.serverID);
+			dataManager = new MetadataManager(this.peerID);
 		}
 	};
 
 	public void connectToServer() {
 		// Set client key and truststore
-		System.setProperty("javax.net.ssl.trustStore", "../SSL/truststore"); // UBUNTU
-		// System.setProperty("javax.net.ssl.trustStore", "SSL/truststore");
+		//System.setProperty("javax.net.ssl.trustStore", "../SSL/truststore"); // UBUNTU
+		System.setProperty("javax.net.ssl.trustStore", "SSL/truststore");
 		System.setProperty("javax.net.ssl.trustStorePassword", "123456");
-		System.setProperty("javax.net.ssl.keyStore", "../SSL/client.keys"); // UBUNTU
-		//System.setProperty("javax.net.ssl.keyStore", "SSL/client.keys");
+		//System.setProperty("javax.net.ssl.keyStore", "../SSL/client.keys"); // UBUNTU
+		System.setProperty("javax.net.ssl.keyStore", "SSL/client.keys");
 		System.setProperty("javax.net.ssl.keyStorePassword", "123456");
 		
 		SSLSocketFactory sf = (SSLSocketFactory) SSLSocketFactory.getDefault();
@@ -224,7 +224,7 @@ public class Peer implements IRMI {
 	private void notifyAuthenticationToServer() {
 		String msg = "REGISTER ";
 
-		msg += serverID + " ";
+		msg += peerID + " ";
 		msg += mcChannel.getPort() + " ";
 		msg += mdbChannel.getPort() + " ";
 		msg += mdrChannel.getPort();
@@ -237,7 +237,7 @@ public class Peer implements IRMI {
 		String fileID = this.getMetadataManager().getFilesIdentifiers().get(fileName);
 
 		if (fileID != null) {
-			String message = "DELETE " + this.protocolVersion + " " + this.serverID + " " + fileID + " ";
+			String message = "DELETE " + this.protocolVersion + " " + this.peerID + " " + fileID + " ";
 			message = message + EventHandler.CRLF + EventHandler.CRLF;
 
 			try {
@@ -272,7 +272,7 @@ public class Peer implements IRMI {
 		while(!this.collectedAllPeers) {}
 		
 		for(PeerEndpoint peer : endpoints) {
-			if (peer.id == serverID) {					// Can't send messages to self
+			if (peer.id == peerID) {					// Can't send messages to self
 				continue;
 			}
 
@@ -344,8 +344,8 @@ public class Peer implements IRMI {
 		return protocolVersion;
 	}
 
-	public int getServerID() {
-		return serverID;
+	public int getID() {
+		return peerID;
 	}
 
 	public String getHostIP() {
@@ -386,7 +386,7 @@ public class Peer implements IRMI {
 
 	@Override
 	public void backup(String filename, int replicationDegree) throws RemoteException {
-		System.out.println("[SERVER " + this.serverID + "] Starting backup protocol...");
+		System.out.println("[SERVER " + this.peerID + "] Starting backup protocol...");
 		try {
 			new Thread(new Backup(filename, replicationDegree, this)).start();
 		} catch (IOException e) {
@@ -396,26 +396,26 @@ public class Peer implements IRMI {
 
 	@Override
 	public void delete(String filename) throws RemoteException {
-		System.out.println("[SERVER " + this.serverID + "] Starting delete protocol...");
+		System.out.println("[SERVER " + this.peerID + "] Starting delete protocol...");
 		sendDeleteRequest(filename);
 	}
 
 	@Override
 	public void restore(String filename) throws RemoteException {
-		System.out.println("[SERVER " + this.serverID + "] Starting restore protocol...");
+		System.out.println("[SERVER " + this.peerID + "] Starting restore protocol...");
 		new Thread(new Restore(filename, this)).start();
 	}
 
 	@Override
 	public String state() throws RemoteException {
-		System.out.println("[SERVER " + this.serverID + "] Starting state feature...");
+		System.out.println("[SERVER " + this.peerID + "] Starting state feature...");
 		System.out.println("State returned.");
 		return this.getPeerState();
 	}
 
 	@Override
 	public void reclaim(int kbytes) throws RemoteException {
-		System.out.println("[SERVER " + this.serverID + "] Starting reclaim protocol...");
+		System.out.println("[SERVER " + this.peerID + "] Starting reclaim protocol...");
 		System.out.println("Disk used: " + this.getMetadataManager().getDiskUsed());
 		new Thread(new Reclaim(kbytes, this)).start();
 	}

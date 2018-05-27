@@ -47,8 +47,8 @@ public class FileChunk implements Callable<Boolean> {
 		return result;
 	}
 	
-	public static byte[] getChunk(int serverID, String fileID, String chunkNr) {
-		File file = new File(Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + serverID + "/" + Peer.CHUNKS_FOLDER + "/"
+	public static byte[] getChunk(int peerID, String fileID, String chunkNr) {
+		File file = new File(Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + peerID + "/" + Peer.CHUNKS_FOLDER + "/"
 				+ chunkNr + "_" + fileID);
 
 		byte[] chunkBytes = new byte[(int) file.length()];
@@ -112,7 +112,7 @@ public class FileChunk implements Callable<Boolean> {
 	};
 	
 	private byte[] makePutChunkRequest() {
-		String message = "PUTCHUNK" + " " + this.peer.getProtocolVersion() + " " +this.peer.getServerID() + " " + this.fileID + " " + this.number +
+		String message = "PUTCHUNK" + " " + this.peer.getProtocolVersion() + " " +this.peer.getID() + " " + this.fileID + " " + this.number +
 				" " + this.replicationDegree + " ";
 		message = message + EventHandler.CRLF + EventHandler.CRLF;
 		

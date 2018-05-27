@@ -55,7 +55,7 @@ public class PeerServerListener implements Runnable {
 			case "PEER":
 				int id = Integer.parseInt(msg[2]);
 				
-				if(id == this.peer.getServerID())
+				if(id == this.peer.getID())
 					break;
 					
 				String host = msg[1];
@@ -80,7 +80,7 @@ public class PeerServerListener implements Runnable {
 				    InputStream inputS = socket.getInputStream();
 				    int bytesToRead = inputS.read(array);
 
-				    File file = new File(Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + peer.getServerID() + "/" + Peer.METADATA_FILE);
+				    File file = new File(Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + peer.getID() + "/" + Peer.METADATA_FILE);
 
 				    if(file.exists())
 				    	file.delete();

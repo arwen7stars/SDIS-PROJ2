@@ -23,7 +23,7 @@ public class State {
 			this.state += "\nNo backup has been started.\n";
 		} else {
 			this.peer.getMetadataManager().getFilesIdentifiers().forEach( (filename, fileid) -> {
-				this.state += "\n- File Path: "+ Peer.PEERS_FOLDER + "/" + Peer.SHARED_FOLDER + "/" + filename;
+				this.state += "\n- File Path: " + Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + peer.getID() + "/" + Peer.FILES_FOLDER + "/" + filename;
 				this.state += "\n- File ID: "+ fileid + " - Desired Replication Degree: " + this.peer.getMetadataManager().getDesiredReplicationDegrees().get("0_"+fileid);
 				
 				if(this.peer.getMetadataManager().getBackupState().get(fileid) == false) {

@@ -52,11 +52,11 @@ public class Server {
 		makeDirectory(Server.SERVER_FOLDER + serverID);
 		
 		// Set server key and truststore
-		System.setProperty("javax.net.ssl.trustStore", "../SSL/truststore"); // UBUNTU
-		//System.setProperty("javax.net.ssl.trustStore", "SSL/truststore");
+		//System.setProperty("javax.net.ssl.trustStore", "../SSL/truststore"); // UBUNTU
+		System.setProperty("javax.net.ssl.trustStore", "SSL/truststore");
 		System.setProperty("javax.net.ssl.trustStorePassword", "123456");
-		System.setProperty("javax.net.ssl.keyStore", "../SSL/server.keys"); // UBUNTU
-		//System.setProperty("javax.net.ssl.keyStore", "SSL/server.keys");
+		//System.setProperty("javax.net.ssl.keyStore", "../SSL/server.keys"); // UBUNTU
+		System.setProperty("javax.net.ssl.keyStore", "SSL/server.keys");
 		System.setProperty("javax.net.ssl.keyStorePassword", "123456");		
 		
 		SSLServerSocketFactory ssf = (SSLServerSocketFactory) SSLServerSocketFactory.getDefault(); 

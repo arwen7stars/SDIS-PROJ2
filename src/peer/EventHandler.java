@@ -64,7 +64,7 @@ public class EventHandler implements Runnable {
 	@Override
 	public void run() {
 		// Check if it was me that sent the message - Ignore
-		if (Integer.parseInt(header[2]) == this.peer.getServerID()) {
+		if (Integer.parseInt(header[2]) == this.peer.getID()) {
 			return;
 		}
 
@@ -98,7 +98,7 @@ public class EventHandler implements Runnable {
 			// Check if I already stored this chunk
 			CopyOnWriteArrayList<Integer> chunkHosts = peer.getMetadataManager().getChunksHosts().get(hashmapKey);
 
-			if (chunkHosts != null && chunkHosts.contains(this.peer.getServerID())) {
+			if (chunkHosts != null && chunkHosts.contains(this.peer.getID())) {
 				return;
 			}
 
@@ -139,7 +139,7 @@ public class EventHandler implements Runnable {
 
 			//Ignore If I don't have the chunk stored
 			if (this.peer.getMetadataManager().getChunksHosts().get(hashmapKey) != null
-					&& !this.peer.getMetadataManager().getChunksHosts().get(hashmapKey).contains(this.peer.getServerID())) {
+					&& !this.peer.getMetadataManager().getChunksHosts().get(hashmapKey).contains(this.peer.getID())) {
 				return;
 			}
 
@@ -265,11 +265,11 @@ public class EventHandler implements Runnable {
 	}
 	
 	private byte[] makePutChunkRequest(String fileID, String chunkNr, int replicationDegree) {
-		String message = "PUTCHUNK" + " " + this.peer.getProtocolVersion() + " " +this.peer.getServerID() + " " + fileID + " " + chunkNr +
+		String message = "PUTCHUNK" + " " + this.peer.getProtocolVersion() + " " +this.peer.getID() + " " + fileID + " " + chunkNr +
 				" " + replicationDegree + " ";
 		message = message + EventHandler.CRLF + EventHandler.CRLF;
 		
-		byte [] chunk = FileChunk.getChunk(peer.getServerID(), fileID, chunkNr);
+		byte [] chunk = FileChunk.getChunk(peer.getID(), fileID, chunkNr);
 		
 		byte [] header = message.getBytes();
 		byte[] packet = new byte[header.length + chunk.length];
@@ -280,7 +280,7 @@ public class EventHandler implements Runnable {
 	}
 
 	private byte[] makeStoreChunkReply(String fileID, String chunkNr) {
-		String message = "STORED " + this.peer.getProtocolVersion() + " " + this.peer.getServerID() + " " + fileID + " "
+		String message = "STORED " + this.peer.getProtocolVersion() + " " + this.peer.getID() + " " + fileID + " "
 				+ chunkNr + " ";
 		message = message + EventHandler.CRLF + EventHandler.CRLF;
 
@@ -288,9 +288,9 @@ public class EventHandler implements Runnable {
 	}
 
 	private byte[] makeChunkMessage(String fileID, String chunkNr) {
-		byte[] chunk = FileChunk.getChunk(peer.getServerID(), fileID, chunkNr);
+		byte[] chunk = FileChunk.getChunk(peer.getID(), fileID, chunkNr);
 
-		String message = "CHUNK " + this.peer.getProtocolVersion() + " " + this.peer.getServerID() + " " + fileID + " "
+		String message = "CHUNK " + this.peer.getProtocolVersion() + " " + this.peer.getID() + " " + fileID + " "
 				+ chunkNr + " ";
 		message = message + EventHandler.CRLF + EventHandler.CRLF;
 
@@ -306,7 +306,7 @@ public class EventHandler implements Runnable {
 	Runnable storeChunk = () -> {
 		
 		
-		String filePath = Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + peer.getServerID() + "/" + Peer.CHUNKS_FOLDER + "/"
+		String filePath = Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + peer.getID() + "/" + Peer.CHUNKS_FOLDER + "/"
 				+ this.header[4] + "_" + this.header[3];
 
 		try (FileOutputStream fos = new FileOutputStream(filePath)) {
@@ -318,7 +318,7 @@ public class EventHandler implements Runnable {
 		
 		// Save chunks information
 		this.peer.getMetadataManager().getChunksStoredSize().put(this.header[4] + "_" + this.header[3], this.body.length);
-		this.peer.getMetadataManager().storeChunkInfo(this.peer.getServerID(), this.header[3], Integer.parseInt(this.header[4]));
+		this.peer.getMetadataManager().storeChunkInfo(this.peer.getID(), this.header[3], Integer.parseInt(this.header[4]));
 		
 		// Update disk usage
 		this.peer.getMetadataManager().setDiskUsed(this.peer.getMetadataManager().getDiskUsed() + this.body.length);

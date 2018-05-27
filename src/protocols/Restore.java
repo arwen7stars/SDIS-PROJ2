@@ -1,5 +1,6 @@
 package protocols;
 
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.HashMap;
@@ -27,14 +28,22 @@ public class Restore implements Runnable {
 
 	public Restore(String filename, Peer peer) {
 		this.fileChunks = new HashMap<Integer, byte[]>();
-		this.filePath = Peer.PEERS_FOLDER + "/" + Peer.SHARED_FOLDER + "/" + filename;
+		this.filePath = Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + peer.getID() + "/" + Peer.FILES_FOLDER + "/" + filename;
 		this.peer = peer;
-		this.newFilePath = Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + this.peer.getServerID() + "/" + Peer.FILES_FOLDER + "/" + filename;
-		this.fileID = new FileIdentifier(this.filePath).toString();
+		this.newFilePath = Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + this.peer.getID() + "/" + Peer.RESTORED_FOLDER + "/" + filename;
 	}
 
 	@Override
 	public void run() {
+		// Check if Peer can restore the file
+		File file = new File(this.filePath);
+		if(file.exists()) {
+			this.fileID = new FileIdentifier(this.filePath).toString();
+		} else {
+			System.out.println("You can't restore a file that you didn't backup.");
+			return;
+		}		
+		
 		ScheduledExecutorService scheduledPool = Executors.newScheduledThreadPool(1);
 
 		boolean restored = false;
@@ -80,7 +89,7 @@ public class Restore implements Runnable {
 				// Check if it was the last chunk
 				byte[] chunk = this.peer.getRestoredChunks().get(this.actualChunk + "_" + this.fileID);
 				
-				String secretKey = "peer" + this.peer.getServerID(); 
+				String secretKey = "peer" + this.peer.getID(); 
 				AES AES = new AES();
 				byte[] chunkDecrypted = AES.decrypt(chunk, secretKey);
 				
@@ -133,7 +142,7 @@ public class Restore implements Runnable {
 	};
 
 	private byte[] makeGetChunkMessage(String fileID, int chunkNr) {
-		String message = "GETCHUNK " + this.peer.getProtocolVersion() + " " + this.peer.getServerID() + " " + fileID + " "
+		String message = "GETCHUNK " + this.peer.getProtocolVersion() + " " + this.peer.getID() + " " + fileID + " "
 				+ chunkNr + " ";
 		message = message + EventHandler.CRLF + EventHandler.CRLF;
 

@@ -32,7 +32,7 @@ public class Backup implements Runnable {
 	private final long FILE_MAX_SIZE = 64000000000L;
 
 	public Backup(String file, int replication, Peer peer) throws FileNotFoundException, IOException {
-		this.filePath = Peer.PEERS_FOLDER + "/" + Peer.SHARED_FOLDER + "/" + file;
+		this.filePath = Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + peer.getID() + "/" + Peer.FILES_FOLDER + "/" + file;
 		this.replicationDegree = replication;
 		this.peer = peer;
 		this.fileName = file;
@@ -96,7 +96,7 @@ public class Backup implements Runnable {
 				
 				
 				//Chunk encryption 
-				String secretKey = "peer" + this.peer.getServerID();   
+				String secretKey = "peer" + this.peer.getID();   
 				AES AES = new AES();
 				byte[] contentEncrypted = AES.encrypt(content, secretKey) ;
 				

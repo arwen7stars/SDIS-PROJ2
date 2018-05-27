@@ -39,7 +39,7 @@ public class BackupMetadata implements Runnable {
 	}
 	
 	Callable<Boolean> sendMetadata = () -> {				
-        File file = new File(Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + peer.getServerID() + "/" + Peer.METADATA_FILE);
+        File file = new File(Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + peer.getID() + "/" + Peer.METADATA_FILE);
         
         if(file.exists())  {
             try   {

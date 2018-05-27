@@ -35,7 +35,7 @@ public class Delete implements Runnable {
 				Files.delete(file.toPath());
 				
 				//Update memory info
-				this.peer.getMetadataManager().removeChunkInfo(filename, this.peer.getServerID());
+				this.peer.getMetadataManager().removeChunkInfo(filename, this.peer.getID());
 				int size = this.peer.getMetadataManager().getChunksStoredSize().get(filename);
 				this.peer.getMetadataManager().getChunksStoredSize().remove(filename);
 				this.peer.getMetadataManager().setDiskUsed(this.peer.getMetadataManager().getDiskUsed() - size);
@@ -46,7 +46,7 @@ public class Delete implements Runnable {
 	}
 
 	private File[] searchChunks(String fileID) {
-		File chunksDirectory = new File(Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + this.peer.getServerID() + "/" + Peer.CHUNKS_FOLDER);
+		File chunksDirectory = new File(Peer.PEERS_FOLDER + "/" + Peer.DISK_FOLDER + this.peer.getID() + "/" + Peer.CHUNKS_FOLDER);
 
     	File[] matches = chunksDirectory.listFiles(new FilenameFilter()
     	{
