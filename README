@@ -1,4 +1,29 @@
-Para compilar o nosso projeto, executa-se o ficheiro “compiler.sh” que se encontra dentro da pasta scripts.
-Como utilizamos RMI, é necessário iniciá-lo executando o ficheiro “rmi.sh”.
-Depois inicializam-se os peers através do ficheiro “peers.sh”. Após a inicialização dos peers, os ficheiros a serem utilizados para teste da aplicação devem ser colocados na pasta scripts/Peers/Shared. 
-Para iniciar o cliente é utilizado o ficheiro dos scripts “client.sh” e seguir as instruções que aparecem, sendo um exemplo de comando: “peer1 BACKUP test.pdf 3”.   
+Ao efetuar um pedido de backup nÃ£o esquecer que a localizaÃ§Ã£o do ficheiro tem que ser a pasta â€œbin/Peers/PeerDisk1/MyFilesâ€ neste caso o IniciatorPeer Ã© o 1, este serÃ¡ sempre apagado ao executar o comando â€œbash compile.shâ€.
+
+Na raiz do projecto compilar ficheiros com â†’  bash compile.sh;
+Iniciar o RMI com â†’ bash rmi.sh;
+Entrar na pasta bin e iniciar trÃªs Master Peer com â†’ java server.Server <ServerId> <porta>,  o ServerId deve ser Ãºnico e o domÃ­nio das portas Ã©  [3000,3002], os Master Peers dever estar na mesma mÃ¡quina;
+Dentro da pasta bin, iniciar trÃªs peers (um terminal para cada) para poder efetuar backup com replicationDegree = 2 â†’ java peer.RunPeer <PeerId> <ServerIp>, o peerId deve ser Ãºnico e o SeverIp Ã© o ip da mÃ¡quina onde estÃ£o os Master Peers;
+IMPORTANTE, Ã© fundamental que a localizaÃ§Ã£o do ficheiro que irÃ¡ utilizar para fazer backup seja â€œbin/Peers/PeerDisk<peerId>/MyFilesâ€ ;
+Dentro da pasta bin, iniciar client com â†’ java client.Client peer<peerId> <protocolo> <fileName> <replicationDegree>, o argumento replicationDegree Ã© apenas para o backup;
+O sistema continua em bom funcionamento mesmo apÃ³s a perda de um servidor, com â†’ Ctrl + C;
+TambÃ©m Ã© possÃ­vel desconectar um peer, o Master Peer irÃ¡ removÃª-lo da sua lista de peers ativos â†’ Ctrl + C;
+
+Ubuntu (instruÃ§Ãµes)
+bash compile.sh
+bash rmi.sh
+cd bin    
+java server.Server 1 3000
+java server.Server 2 3001
+java peer.RunPeer 1 <ServerIp>
+java peer.RunPeer 2 <ServerIp>
+java peer.RunPeer 3 <ServerIp>
+java client.Client peer1 BACKUP <fileName> <replicationDegree>
+Ctrl + C  â†’ no terminal do Master Peer 1
+java client.Client peer1 RESTORE <fileName>
+java client.Client peer1 DELETE <fileName>
+java client.Client peer3 RECLAIM 64
+java client.Client peer3 STATE
+java peer.RunPeer 4 <ServerIp>
+java client.Client peer1 BACKUP <fileName> <replicationDegree>
+
